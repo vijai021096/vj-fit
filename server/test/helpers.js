@@ -1,6 +1,7 @@
 import http from 'node:http'
 import { PGlite } from '@electric-sql/pglite'
 import { createApp, SCHEMA } from '../src/app.js'
+import { createPush } from '../src/push.js'
 
 /** In-process Postgres (PGlite) behind the same adapter shape as pgDb. */
 export async function memDb() {
@@ -14,7 +15,9 @@ export async function memDb() {
 }
 export async function startServer(opts = {}) {
   const db = await memDb()
-  const server = http.createServer(createApp(db, { accessLog: false, log: () => {}, ...opts }))
+  const { webpush, ...rest } = opts
+  const push = webpush ? createPush(db, webpush, () => {}) : undefined
+  const server = http.createServer(createApp(db, { accessLog: false, log: () => {}, push, ...rest }))
   await new Promise((r) => server.listen(0, '127.0.0.1', r))
   const base = `http://127.0.0.1:${server.address().port}`
   const call = async (method, path, { token, body, origin } = {}) => {
@@ -25,5 +28,5 @@ export async function startServer(opts = {}) {
     const text = await r.text()
     return { status: r.status, headers: r.headers, body: text ? JSON.parse(text) : null }
   }
-  return { db, base, call, close: () => new Promise((r) => server.close(r)) }
+  return { db, push, base, call, close: () => new Promise((r) => server.close(r)) }
 }

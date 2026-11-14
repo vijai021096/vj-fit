@@ -27,6 +27,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,woff2,webp,png,svg,webmanifest}'],
         globIgnores: ['**/*-ext-*.woff2', '**/*vietnamese*.woff2', '**/*cyrillic*.woff2', '**/*greek*.woff2', 'icons/splash-*.png'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,

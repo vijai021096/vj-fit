@@ -11,6 +11,7 @@ import { downloadICS } from '../lib/ics'
 import { fmtDate, programEnd, week1Start, weekdayOf } from '../engine/calendar'
 import { targets } from '../engine/nutrition'
 import { SyncPanel } from './SyncPanel'
+import { disableReminders, enableReminders, remindersOn, remindersSupported, sendTestReminder } from '../lib/reminders'
 import { Btn, Card, Section, Segmented, Sheet, cx } from '../components/ui'
 
 const Row = ({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) => (
@@ -33,6 +34,13 @@ export function Settings() {
   const [imp, setImp] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [photos, setPhotos] = useState(false)
+  const [rem, setRem] = useState(remindersOn())
+  const [remBusy, setRemBusy] = useState(false)
+  const toggleRem = async (on: boolean) => {
+    setRemBusy(true)
+    try { if (on) { await enableReminders(); setRem(true); s.say('Reminders on for this phone') } else { await disableReminders(); setRem(false) } }
+    catch (e) { s.say((e as Error).message) } finally { setRemBusy(false) }
+  }
   const [tab, setTab] = useState<'you' | 'plan' | 'data'>('you')
   const file = useRef<HTMLInputElement>(null)
   const sunStart = weekdayOf(s.settings.programStart) === 'sun'
@@ -64,6 +72,13 @@ export function Settings() {
             <Card>
               <Row label="Whose phone is this?" sub="The app opens on this person and warns when you’re viewing the other."><Segmented id="set-me" small value={s.me ?? 'none'} onChange={(v) => s.set((x) => { x.me = v === 'none' ? null : v })} options={[{ value: 'vikas', label: 'Vikas' }, { value: 'varsha', label: 'Varsha' }]} /></Row>
               <Row label="Hide my weight from the other phone" sub="Hides your kg and weight chart when the other person views you. A courtesy, not a lock: both phones share the same data."><Toggle label="Hide my weight" on={!!s.profiles[s.me ?? person].hideWeight} onChange={(v) => s.set((x) => { x.profiles[x.me ?? person].hideWeight = v })} /></Row>
+            </Card>
+          </Section>
+          <Section title="Reminders">
+            <Card>
+              <Row label="Meal, water and gym reminders" sub={remindersSupported() ? 'Pushed from the server to this phone for whoever owns it. Needs the app installed to your Home Screen on iPhone.' : 'Not available in this browser. On iPhone, add the app to your Home Screen first.'}><Toggle label="Reminders" on={rem} onChange={(v) => { if (!remBusy) void toggleRem(v) }} /></Row>
+              {rem && <Btn kind="soft" className="w-full mt-2" onClick={() => void sendTestReminder().then(() => s.say('Test sent. It should arrive in a few seconds.')).catch((e: Error) => s.say(e.message))}>Send a test reminder</Btn>}
+              {rem && <p className="text-[12px] text-mute mt-2">Each phone uploads the next 7 days of reminders whenever you open the app, so open it at least once a week.</p>}
             </Card>
           </Section>
           <Section title={`${NAME[person]}’s profile`}>

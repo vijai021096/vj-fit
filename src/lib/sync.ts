@@ -106,7 +106,7 @@ export async function scan(now = Date.now()): Promise<Map<string, Rec>> {
 
 /* -------------------------------- network -------------------------------- */
 class HttpErr extends Error { constructor(public status: number, m: string) { super(m) } }
-async function call<T>(api: string, path: string, init: RequestInit & { token?: string } = {}): Promise<T> {
+export async function call<T>(api: string, path: string, init: RequestInit & { token?: string } = {}): Promise<T> {
   const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000)
   try {
     const r = await fetch(`${api}${path}`, { ...init, signal: ctl.signal, headers: { 'Content-Type': 'application/json', ...(init.token ? { Authorization: `Bearer ${init.token}` } : {}) } })

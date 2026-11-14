@@ -6,6 +6,7 @@ import './index.css'
 import App from './App'
 import { watchContent } from './lib/content'
 import { consumeSetupLink, startSync } from './lib/sync'
+import { startReminders } from './lib/reminders'
 import { setSimulatedNow } from './engine/calendar'
 
 const sim = new URLSearchParams(location.search).get('simulate') ?? sessionStorage.getItem('v2fit-simulate')
@@ -39,4 +40,5 @@ class Boundary extends React.Component<{ children: React.ReactNode }, { err: Err
 watchContent()
 consumeSetupLink()
 startSync()
+startReminders()
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Boundary><App /></Boundary></React.StrictMode>)

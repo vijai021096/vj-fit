@@ -9,6 +9,8 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 /** The one household Vikas and Varsha share when a SHARED_KEY is configured. */
 export const SHARED_HOUSEHOLD = '00000000-0000-4000-8000-000000000001'
 
+import { PUSH_SCHEMA, PushError } from './push.js'
+
 export const SCHEMA = `
 create table if not exists households (
   id uuid primary key,
@@ -44,7 +46,7 @@ create table if not exists records (
 );
 create index if not exists records_household_seq on records (household_id, seq);
 create index if not exists devices_household on devices (household_id);
-`
+${PUSH_SCHEMA}`
 
 export const KINDS = new Set(['session', 'weight', 'measure', 'day', 'profile', 'settings', 'badges', 'grocery', 'content', 'avatar'])
 const MAX_BODY = 4 * 1024 * 1024
@@ -105,6 +107,8 @@ export function createApp(db, opts = {}) {
   const sharedKey = opts.sharedKey ? String(opts.sharedKey) : ''
   const openLimit = limiter(opts.openLimit ?? 20, 10 * 60 * 1000)
   const log = opts.log ?? ((...a) => console.log(...a))
+  const push = opts.push ?? null
+  const viaPush = (fn) => fn().catch((e) => { throw e instanceof PushError ? new HttpError(e.status, e.message) : e })
 
   async function auth(req) {
     const h = req.headers.authorization ?? ''
@@ -292,6 +296,14 @@ export function createApp(db, opts = {}) {
     if (m === 'POST' && p === '/api/pair/join') return [200, await pairJoin(req, await readJson(req))]
     if (m === 'GET' && p === '/api/me') return [200, await me(req)]
     if (m === 'POST' && p === '/api/sync') return [200, await sync(req, await readJson(req))]
+    if (p.startsWith('/api/push')) {
+      if (!push) throw new HttpError(404, 'Reminders are not enabled on this server')
+      if (m === 'GET' && p === '/api/push/key') return [200, { publicKey: await push.publicKey() }]
+      const a = await auth(req)
+      if (m === 'PUT' && p === '/api/push/subscription') return [200, await viaPush(async () => push.save(a.deviceId, await readJson(req)))]
+      if (m === 'DELETE' && p === '/api/push/subscription') return [200, await push.remove(a.deviceId)]
+      if (m === 'POST' && p === '/api/push/test') return [200, await viaPush(() => push.test(a.deviceId))]
+    }
     const dm = /^\/api\/devices\/([0-9a-f-]{36})$/.exec(p)
     if (m === 'DELETE' && dm) return [200, await unlink(req, dm[1])]
     throw new HttpError(404, 'Not found')
@@ -305,7 +317,7 @@ export function createApp(db, opts = {}) {
     res.setHeader('Cache-Control', 'no-store')
     if (ok) {
       res.setHeader('Access-Control-Allow-Origin', origin)
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
       res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type')
       res.setHeader('Access-Control-Max-Age', '600')
     }
