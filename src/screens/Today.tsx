@@ -1,0 +1,253 @@
+import { useEffect, useMemo, useState } from 'react'
+import { motion } from 'framer-motion'
+import { AlertTriangle, ArrowRight, Check, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils } from 'lucide-react'
+import { useStore, usePerson } from '../store'
+import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
+import { db, dayId, patchDay, setWeight, useLive, type DayRow } from '../db'
+import { useNow, usePosition, useSessions } from '../lib/hooks'
+import { startSession, todayPlan } from '../lib/session'
+import { PROGRAMS, resolveSession, sessionMuscles } from '../engine/program'
+import { addDays, fmtDate, greeting, istClock, istLong, istMinutes, week1Start } from '../engine/calendar'
+import { streak, weekKeys, otherPerson } from '../lib/history'
+import { PLANS, dayMenu, optionById } from '../engine/rotation'
+import { fmtMin, mealName, mealTimes, scaleDay, targets } from '../engine/nutrition'
+import { BodyMap } from '../components/BodyMap'
+import { Btn, Card, Chip, Ring, Section, Sheet, Stepper, Ticker, cx, item, stagger } from '../components/ui'
+import { downloadBackup } from '../lib/backup'
+
+const WATER_L: Record<Person, number> = { vikas: 3.5, varsha: 2.75 }
+const STEPS: Record<Person, number> = { vikas: 7500, varsha: 9500 }
+export const GLASS = 0.25
+export const dayIndex = (wd: Weekday) => WEEKDAYS.indexOf(wd)
+
+export function useDay(person: Person, date: string): DayRow {
+  return useLive<DayRow>(async () => (await db.days.get(dayId(person, date))) ?? { id: dayId(person, date), person, date, eaten: {}, swaps: {}, water: 0, steps: 0, updatedAt: 0 }, [person, date],
+    { id: '', person, date, eaten: {}, swaps: {}, water: 0, steps: 0, updatedAt: 0 })
+}
+
+/** Today's menu for a person with swaps and portions applied. */
+export function useMenu(person: Person, weekInMonth: number, dIdx: number, swaps: Record<string, string>) {
+  const profile = useStore((s) => s.profiles[person])
+  return useMemo(() => {
+    const plan = PLANS[person]
+    const base = dayMenu(person, weekInMonth, dIdx, profile.veg)
+    const picks = { ...base, ...swaps }
+    const chosen = plan.slots.map((s) => ({ slot: s.id, option: optionById(plan, picks[s.id]) ?? optionById(plan, base[s.id])! }))
+    const t = targets(person, profile)
+    const scaled = scaleDay(chosen, t.kcal)
+    const times = mealTimes(plan.slots.map((s) => s.id), profile.gymTime)
+    return { plan, chosen, scaled, times, t, base }
+  }, [person, weekInMonth, dIdx, JSON.stringify(swaps), profile]) // eslint-disable-line
+}
+
+export function Today() {
+  const person = usePerson()
+  const profile = useStore((s) => s.profiles[person])
+  const settings = useStore((s) => s.settings)
+  const flags = useStore((s) => s.flags)
+  const active = useStore((s) => s.active[person])
+  const { open, setTab, set, say } = useStore.getState()
+  const d = useNow(15000)
+  const pos = usePosition()
+  const sessions = useSessions()
+  const day = useDay(person, pos.date)
+  const [pick, setPick] = useState(false)
+  const [stepsOpen, setStepsOpen] = useState(false)
+  const [kg, setKg] = useState(profile.weightKg)
+  const todayW = useLive(() => db.weights.get(dayId(person, pos.date)), [person, pos.date], undefined)
+  useEffect(() => { setKg(todayW?.kg ?? profile.weightKg) }, [todayW?.kg, profile.weightKg, person])
+
+  const plan = todayPlan(person, pos, profile)
+  const res = plan.kind === 'day' || plan.kind === 'day0' ? plan.res : null
+  const doneKeys = weekKeys(sessions ?? [], pos.cycle, pos.weekIndex)
+  const todayKey = plan.kind === 'day0' ? 'day0' : pos.weekday
+  const doneToday = (sessions ?? []).find((s) => s.date === pos.date && s.finishedAt)
+  const thisDone = plan.kind === 'day0' ? (sessions ?? []).some((s) => s.key === 'day0') : doneKeys.has(todayKey)
+  const muscles = res ? sessionMuscles(res.steps) : null
+  const wIdx = pos.phase === 'program' ? pos.weekInMonth : 1
+  const dIdx = pos.phase === 'program' ? dayIndex(pos.weekday) : 6
+  const menu = useMenu(person, wIdx, dIdx, day.swaps)
+
+  const missed = useMemo(() => {
+    if (pos.phase !== 'program' || !sessions) return null
+    for (const wd of WEEKDAYS.slice(0, dayIndex(pos.weekday))) {
+      const def = PROGRAMS[person].days[wd]
+      if (['rest', 'active'].includes(def.kind) || doneKeys.has(wd)) continue
+      if (pos.mergedDay0 && wd === 'mon') continue
+      return { wd, title: def.title }
+    }
+    return null
+  }, [pos, sessions, person]) // eslint-disable-line
+
+  const mins = istMinutes(d)
+  const next = menu.plan.slots.map((s) => ({ s, at: menu.times[s.id] ?? 0 })).filter((x) => !day.eaten[x.s.id]).sort((a, b) => a.at - b.at).find((x) => x.at >= mins - 45)
+  const nextOpt = next ? menu.chosen.find((c) => c.slot === next.s.id)!.option : null
+  const until = next ? Math.round(next.at - mins) : 0
+  const proteinEaten = menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0)
+  const stk = streak(sessions ?? [], pos.date, settings.programStart)
+  const positionLabel = pos.phase === 'program' ? `Month ${pos.month} · Week ${pos.weekInMonth} · ${res && 'mod' in res ? res.mod.name : ''} · Day ${pos.dayNumber}${pos.cycle > 1 ? ` · Cycle ${pos.cycle}` : ''}`
+    : pos.phase === 'day0' ? 'Day 0 · Orientation' : pos.phase === 'before' ? `Starts ${fmtDate(settings.programStart)}` : 'Week 1 starts tomorrow'
+
+  const begin = (wd: Weekday, isDay0 = false) => {
+    const title = isDay0 ? 'Day 0 — Orientation' : PROGRAMS[person].days[wd].title
+    startSession(person, pos, { weekday: wd, isDay0, title })
+  }
+  const needsReview = pos.phase === 'program' && pos.cycle > (flags.reviewDone[person] ?? 1)
+  const backupDue = (sessions?.length ?? 0) >= 3 && Date.now() - Math.max(flags.lastBackup, flags.backupNudge) > 7 * 86400000
+
+  return (
+    <motion.div variants={stagger} initial="hidden" animate="show">
+      <motion.div variants={item}>
+        <div className="text-[13px] text-mute num flex items-center gap-2"><Clock size={13} /> {istLong(d)} · {istClock(d)} IST</div>
+        <h1 className="display text-[32px] leading-tight font-semibold mt-1">{greeting(mins)}, <span className="accent-grad-text">{NAME[person]}</span></h1>
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
+          <Chip tone="accent">{positionLabel}</Chip>
+          <Chip><Flame size={13} className="accent-text" /> <Ticker value={stk} /> streak</Chip>
+        </div>
+      </motion.div>
+
+      {needsReview && <motion.div variants={item}><Card className="mt-4 border-a1/50" onClick={() => open({ type: 'review' })}><div className="flex items-center gap-3"><Sparkles className="accent-text" /><div className="flex-1"><div className="font-semibold">12 weeks done — your Program Review is ready</div><div className="text-[13px] text-mute">See your trends, then start Cycle {pos.cycle}.</div></div><ArrowRight size={18} /></div></Card></motion.div>}
+
+      {/* Hero workout */}
+      <motion.div variants={item} className="mt-4">
+        {sessions === undefined ? <div className="skeleton h-56" /> : active ? (
+          <Card className="accent-ring" onClick={() => open({ type: 'session' })}>
+            <div className="text-[12px] uppercase tracking-widest accent-text font-semibold">In progress</div>
+            <div className="display text-[26px] font-semibold mt-1">{active.title}</div>
+            <div className="text-[14px] text-mute">Started {new Date(active.startedAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })} · your sets are saved as you go</div>
+            <Btn className="w-full mt-4"><Play size={18} /> Resume session</Btn>
+          </Card>
+        ) : plan.kind === 'before' || plan.kind === 'gap' ? (
+          <Card>
+            <div className="text-[12px] uppercase tracking-widest accent-text font-semibold">{plan.kind === 'before' ? `${plan.days} day${plan.days === 1 ? '' : 's'} to go` : 'Rest up'}</div>
+            <div className="display text-[26px] font-semibold mt-1">{plan.kind === 'before' ? 'Day 0 — Orientation' : 'Week 1 starts tomorrow'}</div>
+            <p className="text-[14px] text-mute mt-1">{plan.kind === 'before' ? `Your first visit is ${fmtDate(settings.programStart, { weekday: 'long', day: 'numeric', month: 'long' })}: baseline, a gym tour and easy starting weights.` : 'Eat well, sleep well, pack your bag.'}</p>
+            <div className="flex gap-2 mt-4">
+              <Btn kind="soft" className="flex-1" onClick={() => setTab('plan')}>Look at the plan</Btn>
+              {plan.kind === 'before' && <Btn className="flex-1" onClick={() => begin('sun', true)}>Start Day 0 early</Btn>}
+            </div>
+          </Card>
+        ) : res!.def.kind === 'rest' ? (
+          <Card><div className="flex items-center gap-3"><div className="w-12 h-12 rounded-2xl bg-a1/15 accent-text grid place-items-center"><Moon /></div><div><div className="display text-[24px] font-semibold">Rest day</div><div className="text-[14px] text-mute">{res!.def.note}</div></div></div>
+            <Btn kind="soft" className="w-full mt-4" onClick={() => setPick(true)}><Shuffle size={16} /> Do a session anyway</Btn></Card>
+        ) : (
+          <Card className="accent-ring overflow-hidden relative">
+            <div className="absolute right-2 top-3 opacity-95 pointer-events-none">{muscles && <BodyMap both primary={muscles.primary} secondary={muscles.secondary} height={128} />}</div>
+            <div className="relative max-w-[66%]">
+              <div className="text-[12px] uppercase tracking-widest accent-text font-semibold">{thisDone ? 'Done today' : res!.def.kind === 'active' ? 'Optional' : 'Today'}</div>
+              <div className="display text-[28px] leading-tight font-semibold mt-1">{res!.def.title}</div>
+              {res!.def.subtitle && <div className="text-[14px] text-mute">{res!.def.subtitle}</div>}
+              <div className="flex gap-2 mt-3 flex-wrap"><Chip><Clock size={13} /> ≈ {res!.def.minutes} min</Chip>{res!.steps.length > 0 && <Chip><Dumbbell size={13} /> {res!.steps.length} moves</Chip>}</div>
+            </div>
+            {res!.def.note && <p className="relative text-[13px] text-mute mt-3">{res!.def.note}</p>}
+            <div className="relative flex gap-2 mt-4">
+              {thisDone
+                ? <div className="flex-1 min-h-[48px] rounded-2xl bg-ok/15 text-ok border border-ok/30 font-semibold grid place-items-center"><span className="inline-flex items-center gap-2"><Check size={18} /> Logged{doneToday?.volume ? ` · ${doneToday.volume.toLocaleString('en-IN')} kg` : ''}</span></div>
+                : <Btn className="flex-1" onClick={() => begin(pos.weekday, plan.kind === 'day0')}><Play size={18} /> Start</Btn>}
+              {plan.kind === 'day' && <Btn kind="soft" label="Do a different session" onClick={() => setPick(true)}><Shuffle size={18} /></Btn>}
+            </div>
+          </Card>
+        )}
+      </motion.div>
+
+      {missed && !active && <motion.div variants={item}><Card className="mt-3 border-warn/40">
+        <div className="flex items-center gap-3"><AlertTriangle className="text-warn shrink-0" size={20} />
+          <div className="flex-1 text-[14px]"><span className="font-semibold">Missed: {WD_LABEL[missed.wd]} {missed.title}</span> — do it today?</div>
+          <Btn kind="soft" onClick={() => begin(missed.wd)}>Do it</Btn></div></Card></motion.div>}
+
+      {/* Rings */}
+      <motion.div variants={item} className="grid grid-cols-4 gap-2 mt-4">
+        {[
+          { l: 'Protein', v: proteinEaten / Math.max(1, menu.t.protein), txt: `${Math.round(proteinEaten)} g`, icon: <Utensils size={16} />, on: () => setTab('diet') },
+          { l: 'Water', v: (day.water * GLASS) / WATER_L[person], txt: `${(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} L`, icon: <Droplets size={16} />, on: () => { void patchDay(person, pos.date, (x) => { x.water += 1 }); say('+1 glass (250 ml)') } },
+          { l: 'Steps', v: day.steps / STEPS[person], txt: day.steps ? `${(day.steps / 1000).toFixed(1)}k` : 'Add', icon: <Footprints size={16} />, on: () => setStepsOpen(true) },
+          { l: 'Workout', v: thisDone || doneToday ? 1 : active ? 0.5 : 0, txt: thisDone || doneToday ? 'Done' : active ? 'Going' : '—', icon: <Dumbbell size={16} />, on: () => active && open({ type: 'session' }) },
+        ].map((r) => (
+          <button key={r.l} type="button" onClick={r.on} aria-label={`${r.l}: ${r.txt}`} className="card p-2.5 flex flex-col items-center gap-1 active:scale-[0.97] transition-transform">
+            <Ring value={r.v} size={58} stroke={6}><span className="accent-text">{r.icon}</span></Ring>
+            <div className="text-[13px] font-semibold num">{r.txt}</div><div className="text-[11px] text-mute -mt-1">{r.l}</div>
+          </button>))}
+      </motion.div>
+
+      {/* Next meal */}
+      {next && nextOpt && <motion.div variants={item}><Card className="mt-3" onClick={() => setTab('diet')}>
+        <div className="flex items-center justify-between"><div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Next meal · {next.s.label}</div>
+          <Chip tone={until <= 0 ? 'accent' : 'default'}>{until <= 0 ? 'Now' : until < 60 ? `in ${until} min` : `in ${Math.floor(until / 60)} h ${until % 60} min`}</Chip></div>
+        <div className="font-medium mt-2 text-[15px]">{mealName(nextOpt, menu.scaled.qty[next.s.id])}</div>
+        <div className="text-[13px] text-mute num mt-0.5">{fmtMin(next.at)} · ≈ {menu.scaled.kcal[next.s.id]} kcal · ≈ {menu.scaled.protein[next.s.id]} g protein</div>
+      </Card></motion.div>}
+
+      {/* Quick weigh-in */}
+      <motion.div variants={item}><Card className="mt-3">
+        <div className="flex items-center justify-between gap-2">
+          <div><div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Quick weigh-in</div><div className="text-[12px] text-mute">Morning, after the toilet, before food</div></div>
+          {todayW && <Chip tone="ok"><Check size={13} /> {todayW.kg} kg</Chip>}
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <Stepper value={kg} onChange={setKg} step={0.1} min={30} max={200} unit="kg" label="Body weight" big />
+          <Btn kind={todayW ? 'soft' : 'primary'} onClick={async () => { await setWeight(person, pos.date, kg); set((s) => { s.profiles[person].weightKg = kg }); say('Weight saved') }}>{todayW ? 'Update' : 'Save'}</Btn>
+        </div>
+      </Card></motion.div>
+
+      {profile.adjustReason && <motion.div variants={item}><Card className="mt-3"><div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Calories check-in</div><p className="text-[14px] mt-1">{profile.adjustReason}</p></Card></motion.div>}
+
+      {backupDue && <motion.div variants={item}><Card className="mt-3"><div className="text-[14px]"><span className="font-semibold">Back up your logs.</span> iPhones can clear app storage. A weekly backup takes ten seconds.</div>
+        <div className="flex gap-2 mt-3"><Btn className="flex-1" onClick={() => void downloadBackup()}>Back up now</Btn><Btn kind="soft" onClick={() => set((s) => { s.flags.backupNudge = Date.now() })}>Later</Btn></div></Card></motion.div>}
+
+      <Section title="Together"><Together /></Section>
+
+      <Sheet open={pick} onClose={() => setPick(false)} title="Do a different session">
+        <p className="text-[14px] text-mute mb-3">Pick any session from this week. The app records which one you did.</p>
+        <div className="space-y-2">{WEEKDAYS.map((wd) => {
+          const def = PROGRAMS[person].days[wd]
+          if (def.kind === 'rest') return null
+          const done = doneKeys.has(wd)
+          return (
+            <button key={wd} type="button" onClick={() => { setPick(false); begin(wd) }} className="w-full min-h-[60px] px-4 rounded-2xl bg-s2 border border-line/60 flex items-center gap-3 text-left">
+              <span className="w-10 text-[13px] text-mute">{WD_LABEL[wd]}</span>
+              <span className="flex-1"><span className="font-medium block">{def.title}</span><span className="text-[12px] text-mute">{def.subtitle ?? `≈ ${def.minutes} min`}</span></span>
+              {done ? <Chip tone="ok"><Check size={13} /> Done</Chip> : wd === pos.weekday ? <Chip tone="accent">Today</Chip> : null}
+            </button>)
+        })}</div>
+      </Sheet>
+      <Sheet open={stepsOpen} onClose={() => setStepsOpen(false)} title="Steps today">
+        <p className="text-[14px] text-mute mb-3">Type the number from your phone’s Health app. Target: {person === 'vikas' ? '7–8k' : '9–10k'} a day.</p>
+        <div className="flex justify-center"><Stepper value={day.steps} onChange={(v) => void patchDay(person, pos.date, (x) => { x.steps = v })} step={500} max={60000} unit="steps" label="Steps" big /></div>
+        <Btn className="w-full mt-5" onClick={() => setStepsOpen(false)}>Done</Btn>
+      </Sheet>
+    </motion.div>
+  )
+}
+
+function Together() {
+  const me = usePerson()
+  const pos = usePosition()
+  const profiles = useStore((s) => s.profiles)
+  const actives = useStore((s) => s.active)
+  const avatars = useStore((s) => s.avatars)
+  const { setPerson, open } = useStore.getState()
+  const todays = useLive(() => db.sessions.where('date').equals(pos.date).toArray(), [pos.date], [])
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-2">
+        {PEOPLE.map((p) => {
+          const pl = profiles[p].onboarded ? todayPlan(p, pos, profiles[p]) : null
+          const title = !pl ? 'Not set up yet' : pl.kind === 'day' || pl.kind === 'day0' ? pl.res.def.title : pl.kind === 'before' ? 'Starting soon' : 'Rest'
+          const done = todays.some((s) => s.person === p && s.finishedAt)
+          const status = done ? 'Done ✓' : actives[p] ? 'In progress' : pl && (pl.kind === 'day' || pl.kind === 'day0') && pl.res.def.kind !== 'rest' ? 'Not yet' : '—'
+          return (
+            <button key={p} type="button" onClick={() => (profiles[p].onboarded ? setPerson(p) : open({ type: 'profile', person: p }))} className={cx('card p-3 text-left', p === me && 'border-a1/50')}
+              style={{ ['--a1c' as string]: p === 'vikas' ? '#4c8dff' : '#ff6b9a', ['--a2c' as string]: p === 'vikas' ? '#22d3ee' : '#c77dff' }}>
+              <div className="flex items-center gap-2">
+                <span className="w-9 h-9 rounded-xl accent-grad grid place-items-center overflow-hidden text-[#08080c] display font-bold">{avatars[p] ? <img src={avatars[p]} alt="" className="w-full h-full object-cover" /> : NAME[p][0]}</span>
+                <span className="font-semibold">{NAME[p]}</span>
+              </div>
+              <div className="text-[13px] mt-2 truncate">{title}</div>
+              <div className={cx('text-[12px]', done ? 'text-ok' : 'text-mute')}>{status}</div>
+            </button>)
+        })}
+      </div>
+      <p className="text-[12px] text-mute mt-2 px-1">This shows what’s logged on <em>this</em> phone. Each phone keeps its own data — use Settings → Backup → Merge to share logs with {NAME[otherPerson(me)]}.</p>
+    </div>
+  )
+}
