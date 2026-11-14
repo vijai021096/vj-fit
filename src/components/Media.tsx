@@ -10,7 +10,7 @@ let manifest: Manifest | null = null
 let pending: Promise<Manifest> | null = null
 export function loadManifest(): Promise<Manifest> {
   if (manifest) return Promise.resolve(manifest)
-  pending ??= fetch('/media/hf/manifest.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((m: Manifest) => (manifest = m))
+  pending ??= fetch('/media/hf/manifest.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : {})).catch(() => ({})).then((m: Manifest) => (manifest = m))
   return pending
 }
 

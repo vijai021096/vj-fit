@@ -35,7 +35,12 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/media/hf/'),
+            urlPattern: ({ url }) => url.pathname === '/media/hf/manifest.json',
+            handler: 'NetworkFirst',
+            options: { cacheName: 'hf-manifest', networkTimeoutSeconds: 3 },
+          },
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/media/hf/') && url.pathname !== '/media/hf/manifest.json',
             handler: 'CacheFirst',
             options: { cacheName: 'hf-media', rangeRequests: true, cacheableResponse: { statuses: [200] }, expiration: { maxEntries: 400 } },
           },
