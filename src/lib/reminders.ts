@@ -8,7 +8,7 @@ import { PROGRAMS } from '../engine/program'
 import { quoteFor } from '../data/quotes'
 import { DEFAULT_API, call, getCfg } from './sync'
 
-export interface ReminderItem { date: string; at: number; title: string; body: string; img?: string; slot?: string }
+export interface ReminderItem { date: string; at: number; title: string; body: string; img?: string; slot?: string; tag?: string }
 const FLAG = 'v2fit-reminders'
 const DAYS_AHEAD = 7
 
@@ -39,7 +39,7 @@ export function buildItems(person: Person, today: string, st: { programStart: st
     if (def && def.kind !== 'rest' && def.kind !== 'active') out.push({ date, at: Math.max(0, gymAt - 15), title: 'Gym in 15 minutes', body: def.title })
     const glasses = Math.round(waterTarget(person, profile) / 0.25)
     out.push({ date, at: 15 * 60, title: 'Gym o’clock 💪', body: quoteFor(date) })
-    for (const at of [11 * 60, 16 * 60, 19 * 60]) out.push({ date, at, title: 'Drink some water', body: `Aim for ${glasses} glasses today (about 250 ml each).` })
+    for (let h = 9; h <= 21; h++) if (h !== 15) out.push({ date, at: h * 60, title: 'Drink some water', body: `A glass now (about 250 ml). Aim for ${glasses} today.`, tag: 'water' })
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at)
 }

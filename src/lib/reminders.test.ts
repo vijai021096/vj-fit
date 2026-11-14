@@ -9,7 +9,9 @@ describe('reminders', () => {
   it('builds a week of meals, gym nudges and water prompts, sorted', () => {
     const items = buildItems('vikas', '2026-11-16', st, prof)
     expect(new Set(items.map((i) => i.date)).size).toBe(7)
-    expect(items.filter((i) => i.title === 'Drink some water').length).toBe(21)
+    expect(items.length).toBeLessThan(200)                // the server rejects more than 200 a week
+    expect(buildItems('varsha', '2026-11-16', st, prof).length).toBeLessThan(200)
+    expect(items.filter((i) => i.title === 'Drink some water').length).toBe(84)
     const q = items.filter((i) => i.title.startsWith('Gym o'))
     expect(q.length).toBe(7)
     expect(q.every((i) => i.at === 15 * 60 && i.body.length > 10)).toBe(true)
