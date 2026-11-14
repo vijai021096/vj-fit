@@ -27,6 +27,13 @@ export function useSessions(person?: Person): SessionLog[] | undefined {
   const p = person ?? me
   return useLive<SessionLog[] | undefined>(() => db.sessions.where('person').equals(p).sortBy('date'), [p], undefined)
 }
+/** Dates this person marked as "not going to the gym". */
+export function useSkips(person?: Person): ReadonlySet<string> {
+  const me = usePerson()
+  const p = person ?? me
+  const rows = useLive<string[]>(async () => (await db.days.where('person').equals(p).toArray()).filter((d) => d.skip).map((d) => d.date), [p], [])
+  return useMemo(() => new Set(rows), [rows])
+}
 export function useTick(ms = 250, on = true) {
   const [, set] = useState(0)
   useEffect(() => { if (!on) return; const id = setInterval(() => set((x) => x + 1), ms); return () => clearInterval(id) }, [ms, on])

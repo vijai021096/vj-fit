@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, ArrowRight, Check, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CalendarOff, Check, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils } from 'lucide-react'
 import { useStore, usePerson, useWeightHidden } from '../store'
 import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
 import { db, dayId, patchDay, setWeight, useLive, type DayRow } from '../db'
-import { useNow, usePosition, useSessions } from '../lib/hooks'
+import { useNow, usePosition, useSessions, useSkips } from '../lib/hooks'
+import { syncReminders } from '../lib/reminders'
 import { startSession, todayPlan } from '../lib/session'
 import { PROGRAMS, resolveSession, sessionMuscles } from '../engine/program'
 import { addDays, fmtDate, greeting, istClock, istLong, istMinutes, week1Start } from '../engine/calendar'
@@ -54,6 +55,9 @@ export function Today() {
   const sessions = useSessions()
   const day = useDay(person, pos.date)
   const [pick, setPick] = useState(false)
+  const skips = useSkips(person)
+  const skippedToday = skips.has(pos.date)
+  const [skipOpen, setSkipOpen] = useState(false)
   const [stepsOpen, setStepsOpen] = useState(false)
   const [kg, setKg] = useState(profile.weightKg)
   const todayW = useLive(() => db.weights.get(dayId(person, pos.date)), [person, pos.date], undefined)
@@ -76,17 +80,18 @@ export function Today() {
       const def = PROGRAMS[person].days[wd]
       if (['rest', 'active'].includes(def.kind) || doneKeys.has(wd)) continue
       if (pos.mergedDay0 && wd === 'mon') continue
+      if (skips.has(addDays(pos.date, WEEKDAYS.indexOf(wd) - dayIndex(pos.weekday)))) continue
       return { wd, title: def.title }
     }
     return null
-  }, [pos, sessions, person]) // eslint-disable-line
+  }, [pos, sessions, person, skips]) // eslint-disable-line
 
   const mins = istMinutes(d)
   const next = menu.plan.slots.map((s) => ({ s, at: menu.times[s.id] ?? 0 })).filter((x) => !day.eaten[x.s.id]).sort((a, b) => a.at - b.at).find((x) => x.at >= mins - 45)
   const nextOpt = next ? menu.chosen.find((c) => c.slot === next.s.id)!.option : null
   const until = next ? Math.round(next.at - mins) : 0
   const proteinEaten = menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0) + extrasOf(day).protein
-  const stk = streak(sessions ?? [], pos.date, settings.programStart)
+  const stk = streak(sessions ?? [], pos.date, settings.programStart, skips)
   const positionLabel = pos.phase === 'program' ? `Month ${pos.month} · Week ${pos.weekInMonth} · ${res && 'mod' in res ? res.mod.name : ''} · Day ${pos.dayNumber}${pos.cycle > 1 ? ` · Cycle ${pos.cycle}` : ''}`
     : pos.phase === 'day0' ? 'Day 0 · Orientation' : pos.phase === 'before' ? `Starts ${fmtDate(settings.programStart)}` : 'Week 1 starts tomorrow'
 
@@ -96,7 +101,7 @@ export function Today() {
   }
   const [gh, gm] = profile.gymTime.split(':').map(Number)
   const gymAt = (gh || 7) * 60 + (gm || 0)
-  const workoutDue = !active && !thisDone && plan.kind === 'day' && !!res && res.def.kind !== 'rest' && res.def.kind !== 'active' && mins >= gymAt - 30 && mins <= gymAt + 150
+  const workoutDue = !active && !thisDone && !skippedToday && plan.kind === 'day' && !!res && res.def.kind !== 'rest' && res.def.kind !== 'active' && mins >= gymAt - 30 && mins <= gymAt + 150
   const glassesTarget = Math.round(waterTarget(person, profile) / GLASS)
   const glassesByNow = Math.round(glassesTarget * Math.min(1, Math.max(0, (mins - 7 * 60) / (21 * 60 - 7 * 60))))
   const nextAction: { title: string; sub: string; cta: string; go: () => void } | null = (() => {
@@ -162,12 +167,24 @@ export function Today() {
               <div className="flex gap-2 mt-3 flex-wrap"><Chip><Clock size={13} /> ≈ {res!.def.minutes} min</Chip>{res!.steps.length > 0 && <Chip><Dumbbell size={13} /> {res!.steps.length} moves</Chip>}</div>
             </div>
             {res!.def.note && <p className="relative text-[13px] text-mute mt-3">{res!.def.note}</p>}
-            <div className="relative flex gap-2 mt-4">
-              {thisDone
-                ? <div className="flex-1 min-h-[48px] rounded-2xl bg-ok/15 text-ok border border-ok/30 font-semibold grid place-items-center"><span className="inline-flex items-center gap-2"><Check size={18} /> Logged{doneToday?.volume ? ` · ${doneToday.volume.toLocaleString('en-IN')} kg` : ''}</span></div>
-                : <Btn className="flex-1" onClick={() => begin(pos.weekday, plan.kind === 'day0')}><Play size={18} /> Start</Btn>}
-              {plan.kind === 'day' && <Btn kind="soft" label="Do a different session" onClick={() => setPick(true)}><Shuffle size={18} /></Btn>}
-            </div>
+            {!thisDone && skippedToday ? (
+              <div className="relative mt-4 rounded-2xl bg-s2 border border-line/60 p-3" data-testid="skipped-card">
+                <div className="flex items-center gap-2 text-[14px] font-semibold"><CalendarOff size={16} /> Not going today · {day.skip?.reason}</div>
+                <p className="text-[13px] text-mute mt-1">Your streak is safe and the gym reminder is paused. Meals and water carry on.</p>
+                <div className="flex gap-2 mt-3">
+                  <Btn className="flex-1" onClick={() => begin(pos.weekday, plan.kind === 'day0')}><Play size={18} /> Start anyway</Btn>
+                  <Btn kind="soft" onClick={() => { void patchDay(person, pos.date, (x) => { delete x.skip }).then(() => syncReminders().catch(() => undefined)); say('Back on for today') }}>Undo</Btn>
+                </div>
+              </div>
+            ) : (<>
+              <div className="relative flex gap-2 mt-4">
+                {thisDone
+                  ? <div className="flex-1 min-h-[48px] rounded-2xl bg-ok/15 text-ok border border-ok/30 font-semibold grid place-items-center"><span className="inline-flex items-center gap-2"><Check size={18} /> Logged{doneToday?.volume ? ` · ${doneToday.volume.toLocaleString('en-IN')} kg` : ''}</span></div>
+                  : <Btn className="flex-1" onClick={() => begin(pos.weekday, plan.kind === 'day0')}><Play size={18} /> Start</Btn>}
+                {plan.kind === 'day' && <Btn kind="soft" label="Do a different session" onClick={() => setPick(true)}><Shuffle size={18} /></Btn>}
+              </div>
+              {!thisDone && <button type="button" data-testid="skip-today" onClick={() => setSkipOpen(true)} className="relative w-full mt-2 min-h-[44px] rounded-2xl text-[14px] text-mute inline-flex items-center justify-center gap-2 active:text-ink"><CalendarOff size={15} /> Not going to the gym today</button>}
+            </>)}
           </Card>
         )}
       </motion.div>
@@ -183,7 +200,7 @@ export function Today() {
           { l: 'Protein', v: proteinEaten / Math.max(1, menu.t.protein), txt: `${Math.round(proteinEaten)} g`, icon: <Utensils size={16} />, on: () => setTab('diet') },
           { l: 'Water', v: (day.water * GLASS) / WATER_L[person], txt: `${(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} L`, icon: <Droplets size={16} />, on: () => { void patchDay(person, pos.date, (x) => { x.water += 1 }); say('+1 glass (250 ml)') } },
           { l: 'Steps', v: day.steps / STEPS[person], txt: day.steps ? `${(day.steps / 1000).toFixed(1)}k` : 'Log', icon: <Footprints size={16} />, on: () => setStepsOpen(true) },
-          { l: 'Workout', v: thisDone || doneToday ? 1 : active ? 0.5 : 0, txt: thisDone || doneToday ? 'Done' : active ? 'Going' : res && res.def.kind === 'rest' ? 'Rest' : 'Not yet', icon: <Dumbbell size={16} />, on: () => active && open({ type: 'session' }) },
+          { l: 'Workout', v: thisDone || doneToday ? 1 : active ? 0.5 : 0, txt: thisDone || doneToday ? 'Done' : active ? 'Going' : skippedToday ? 'Skipped' : res && res.def.kind === 'rest' ? 'Rest' : 'Not yet', icon: <Dumbbell size={16} />, on: () => active && open({ type: 'session' }) },
         ].map((r) => (
           <button key={r.l} type="button" onClick={r.on} aria-label={`${r.l}: ${r.txt}`} className="card p-2.5 flex flex-col items-center gap-1 active:scale-[0.97] transition-transform">
             <Ring value={r.v} size={58} stroke={6}><span className="accent-text">{r.icon}</span></Ring>
@@ -218,6 +235,14 @@ export function Today() {
 
       <Section title="Together"><Together /></Section>
 
+      <Sheet open={skipOpen} onClose={() => setSkipOpen(false)} title="Not going to the gym today?">
+        <p className="text-[14px] text-mute mb-3">Pick a reason. Your streak stays safe, today won’t count as a miss, and the gym reminder is paused.</p>
+        <div className="space-y-2" data-testid="skip-reasons">
+          {['Travelling', 'Not feeling well', 'Injury or sore', 'Busy day', 'Just resting'].map((r) => (
+            <button key={r} type="button" onClick={() => { setSkipOpen(false); void patchDay(person, pos.date, (x) => { x.skip = { reason: r } }).then(() => syncReminders().catch(() => undefined)); say('Noted. Enjoy the day.') }}
+              className="w-full min-h-[52px] px-4 rounded-2xl bg-s2 border border-line/60 text-left font-medium active:scale-[0.99]">{r}</button>))}
+        </div>
+      </Sheet>
       <Sheet open={pick} onClose={() => setPick(false)} title="Do a different session">
         <p className="text-[14px] text-mute mb-3">Pick any session from this week. The app records which one you did.</p>
         <div className="space-y-2">{WEEKDAYS.map((wd) => {

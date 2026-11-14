@@ -13,6 +13,8 @@ export interface DayRow {
   extras?: Extra[]
   /** Cardio timed outside a workout (a walk, a bike ride). */
   cardio?: CardioEntry[]
+  /** "Not going to the gym today" (travelling, sick…). Keeps the streak and pauses the gym reminder. */
+  skip?: { reason: string }
 }
 export interface CardioEntry { id: string; ex: string; sec: number }
 export interface Extra { id: string; label: string; kcal: number; protein: number }

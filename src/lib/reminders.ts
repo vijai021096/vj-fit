@@ -5,6 +5,7 @@ import { addDays, position } from '../engine/calendar'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
 import { fmtMin, mealName, mealTimes, scaleDay, targets, waterTarget } from '../engine/nutrition'
 import { PROGRAMS } from '../engine/program'
+import { db } from '../db'
 import { quoteFor } from '../data/quotes'
 import { DEFAULT_API, call, getCfg } from './sync'
 
@@ -13,7 +14,7 @@ const FLAG = 'v2fit-reminders'
 const DAYS_AHEAD = 7
 
 /** The next week of reminders for one person: each meal, a nudge before the gym, and three water prompts. Pure, so it can be tested. */
-export function buildItems(person: Person, today: string, st: { programStart: string; mergeDay0: boolean }, profile: Parameters<typeof targets>[1], swapsByDate: Record<string, Record<string, string>> = {}): ReminderItem[] {
+export function buildItems(person: Person, today: string, st: { programStart: string; mergeDay0: boolean }, profile: Parameters<typeof targets>[1], swapsByDate: Record<string, Record<string, string>> = {}, skipDates: ReadonlySet<string> = new Set()): ReminderItem[] {
   const out: ReminderItem[] = []
   const plan = PLANS[person]
   const [gh, gm] = profile.gymTime.split(':').map(Number)
@@ -36,7 +37,7 @@ export function buildItems(person: Person, today: string, st: { programStart: st
       out.push({ date, at, title: `${label} at ${fmtMin(at)}`, body: `${mealName(c.option, sc.qty[c.slot])} · ≈ ${sc.kcal[c.slot]} kcal, ${sc.protein[c.slot]} g protein`, img: c.option.id, slot: c.slot })
     }
     const def = pos.phase === 'program' ? PROGRAMS[person].days[pos.weekday] : null
-    if (def && def.kind !== 'rest' && def.kind !== 'active') out.push({ date, at: Math.max(0, gymAt - 15), title: 'Gym in 15 minutes', body: def.title })
+    if (def && def.kind !== 'rest' && def.kind !== 'active' && !skipDates.has(date)) out.push({ date, at: Math.max(0, gymAt - 15), title: 'Gym in 15 minutes', body: def.title })
     const glasses = Math.round(waterTarget(person, profile) / 0.25)
     out.push({ date, at: 15 * 60, title: 'Gym o’clock 💪', body: quoteFor(date) })
     for (let h = 9; h <= 21; h++) if (h !== 15) out.push({ date, at: h * 60, title: 'Drink some water', body: `A glass now (about 250 ml). Aim for ${glasses} today.`, tag: 'water' })
@@ -60,7 +61,8 @@ export async function syncReminders(): Promise<void> {
   const s = useStore.getState()
   const person = (s.me ?? s.person ?? 'vikas') as Person
   const today = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)
-  const items = buildItems(person, today, s.settings, s.profiles[person])
+  const skips = new Set((await db.days.where('person').equals(person).toArray()).filter((d) => d.skip).map((d) => d.date))
+  const items = buildItems(person, today, s.settings, s.profiles[person], {}, skips)
   await call(DEFAULT_API, '/api/push/subscription', { method: 'PUT', token: cfg.token, body: JSON.stringify({ subscription: sub.toJSON(), person, items }) })
 }
 

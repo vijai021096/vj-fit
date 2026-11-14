@@ -65,7 +65,7 @@ export function Insights() {
   const todayStr = usePosition().date
   const stalled = useMemo(() => (pdata.sessions ? stalledLifts(pdata.sessions, todayStr) : []), [pdata.sessions, todayStr])
   const cardio7 = useMemo(() => { const t = istDate(); return cardioTotals(pdata.sessions ?? [], pdata.days ?? [], addDays(t, -6), t) }, [pdata.sessions, pdata.days])
-  const review = useMemo(() => (w7 && pdata.weights ? weeklyReview(who, w7.stats, w7.sum, w7.target, pdata.weights, stalled) : null), [w7, pdata.weights, stalled, who])
+  const review = useMemo(() => (w7 && pdata.weights ? weeklyReview(who, w7.stats, w7.sum, w7.target, pdata.weights, stalled, (pdata.days ?? []).filter((d) => d.skip && d.date >= addDays(istDate(), -6) && d.date <= istDate()).length) : null), [w7, pdata.weights, pdata.days, stalled, who])
   const advice = useMemo(() => deloadAdvice(stalled), [stalled])
   const notes = useMemo(() => (a ? narrate(who, a.stats, a.sum, a.target, stepsTarget(who, profile)) : []), [a, who, profile])
   const chart = useMemo(() => (a?.stats ?? []).map((d: DayStat) => ({ date: d.date, eaten: d.eaten || null, burn: d.logged ? d.burn : null, workout: d.workoutBurn + d.stepBurn })), [a])

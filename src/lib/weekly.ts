@@ -24,9 +24,9 @@ export function weekWeightDelta(weights: WeightRow[], from: string, to: string):
 }
 
 /** The single most useful thing to change next week, goal-aware. Order matters: fix logging first, then the biggest lever. */
-export function weeklyReview(person: Person, stats: DayStat[], sum: Summary, t: { kcal: number; protein: number }, weights: WeightRow[], stalled: Stalled[]): Review {
+export function weeklyReview(person: Person, stats: DayStat[], sum: Summary, t: { kcal: number; protein: number }, weights: WeightRow[], stalled: Stalled[], skippedDays = 0): Review {
   const from = stats[0]?.date ?? '', to = stats[stats.length - 1]?.date ?? ''
-  const planned = plannedPerWeek(person)
+  const planned = Math.max(1, plannedPerWeek(person) - skippedDays)   // days you said you'd miss don't count against you
   const proteinDays = stats.filter((d) => d.eaten > 0 && d.protein >= t.protein * 0.9).length
   const weightDelta = weekWeightDelta(weights, from, to)
   const gap = sum.avgEaten - t.kcal

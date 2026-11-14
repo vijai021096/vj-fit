@@ -5,6 +5,17 @@ import type { Profile } from '../types'
 const prof = { heightCm: 175, weightKg: 70, age: 28, sex: 'male', gymTime: '07:00', veg: false, kcalAdjust: 0, onboarded: true } as Profile
 const st = { programStart: '2026-11-15', mergeDay0: false }
 
+describe('reminders and skipped days', () => {
+  it('drops the gym nudge on a day marked not going, keeps meals', () => {
+    const all = buildItems('vikas', '2026-11-16', st, prof)
+    const gymDate = all.find((i) => i.title === 'Gym in 15 minutes')!.date
+    const cut = buildItems('vikas', '2026-11-16', st, prof, {}, new Set([gymDate]))
+    expect(cut.some((i) => i.date === gymDate && i.title === 'Gym in 15 minutes')).toBe(false)
+    expect(cut.some((i) => i.date === gymDate && !!i.slot)).toBe(true)
+    expect(cut.length).toBe(all.length - 1)
+  })
+})
+
 describe('reminders', () => {
   it('builds a week of meals, gym nudges and water prompts, sorted', () => {
     const items = buildItems('vikas', '2026-11-16', st, prof)

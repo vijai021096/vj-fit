@@ -13,6 +13,14 @@ describe('weekWeightDelta', () => {
   it('is null without a before/after pair', () => { expect(weekWeightDelta([W('2026-11-03', 70)], '2026-11-01', '2026-11-07')).toBeNull() })
 })
 
+describe('weeklyReview skipped days', () => {
+  it('takes days you said you would miss off the planned count', () => {
+    const s = Array.from({ length: 7 }, (_, i) => day(i, 2800, 130))
+    const base = weeklyReview('vikas', s, sum({}), { kcal: 2800, protein: 130 }, [], []).planned
+    expect(weeklyReview('vikas', s, sum({}), { kcal: 2800, protein: 130 }, [], [], 2).planned).toBe(base - 2)
+  })
+})
+
 describe('weeklyReview focus', () => {
   const t = { kcal: 2800, protein: 130 }
   it('asks for logging first', () => {
