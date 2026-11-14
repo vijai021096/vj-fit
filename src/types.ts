@@ -137,6 +137,8 @@ export interface Profile {
   gymTime: string
   veg: boolean
   kcalAdjust: number
+  /** Hide this person's body weight when the other person's phone views them. A courtesy, not a lock. */
+  hideWeight?: boolean
   lastAdjust?: string
   adjustReason?: string
   squatApproved?: boolean

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayStats, intakeOn, rangeDates, sessionBurn, summarize } from './insights'
+import { balanceTone, dayStats, extrasOf, intakeOn, narrate, rangeDates, sessionBurn, summarize, type DayStat } from './insights'
 import type { DayRow } from '../db'
 import type { Profile, SessionLog } from '../types'
 
@@ -41,5 +41,29 @@ describe('insights', () => {
   it('rangeDates ends today and has n entries', () => {
     const r = rangeDates('2026-11-20', 7)
     expect(r).toHaveLength(7); expect(r[6]).toBe('2026-11-20'); expect(r[0]).toBe('2026-11-14')
+  })
+  it('"ate something else" counts on its own and on top of ticked meals', () => {
+    const ex = [{ id: 'a', label: 'Samosa', kcal: 260, protein: 5 }, { id: 'b', label: 'Chai', kcal: 120, protein: 2 }]
+    expect(extrasOf(row('2026-11-17', { extras: ex }))).toEqual({ kcal: 380, protein: 7 })
+    expect(intakeOn('vikas', row('2026-11-17', { extras: ex }), prof(), st)).toEqual({ kcal: 380, protein: 7 })
+    const meal = intakeOn('vikas', row('2026-11-17', { eaten: { lunch: true } }), prof(), st)
+    const both = intakeOn('vikas', row('2026-11-17', { eaten: { lunch: true }, extras: ex }), prof(), st)
+    expect(both.kcal).toBe(meal.kcal + 380)
+  })
+  it('a surplus is good for Vikas and a deficit is good for Varsha', () => {
+    expect(balanceTone('vikas', 300)).toBe('good'); expect(balanceTone('vikas', -400)).toBe('warn')
+    expect(balanceTone('varsha', -400)).toBe('good'); expect(balanceTone('varsha', 300)).toBe('warn'); expect(balanceTone('varsha', -1200)).toBe('warn')
+    expect(balanceTone('vikas', null)).toBe('plain')
+  })
+  it('narrates the week in plain, goal-aware words', () => {
+    const days = (eaten: number, protein: number): DayStat[] => Array.from({ length: 7 }, (_, i) => ({ date: `2026-11-${10 + i}`, eaten, protein, workoutBurn: 0, stepBurn: 0, burn: 2400, steps: 6000, water: 2, minutes: i < 4 ? 50 : 0, volume: 0, sessions: i < 4 ? 1 : 0, logged: true }))
+    const stats = days(2300, 120)
+    const sum = summarize(stats)
+    const low = narrate('vikas', stats, sum, { kcal: 2800, protein: 130 }, 7500)
+    expect(low[0].tone).toBe('warn'); expect(low[0].text).toContain('500 kcal a day under target')
+    expect(low[1].text).toContain('Protein hit on 7 of 7')
+    const cut = narrate('varsha', stats, sum, { kcal: 2800, protein: 130 }, 9500)
+    expect(cut[0].tone).toBe('good')
+    expect(narrate('vikas', [], summarize([]), { kcal: 2800, protein: 130 }, 7500)).toEqual([])
   })
 })

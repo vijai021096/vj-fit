@@ -9,7 +9,10 @@ export interface DayRow {
   id: string; person: Person; date: string
   eaten: Record<string, boolean>; swaps: Record<string, string>
   water: number; steps: number; creatine?: boolean; updatedAt: number
+  /** Things eaten outside the plan. */
+  extras?: Extra[]
 }
+export interface Extra { id: string; label: string; kcal: number; protein: number }
 
 /** Per-record sync bookkeeping: what we last saw, when it changed, and whether the server has it. */
 export interface SyncMeta { key: string; kind: string; id: string; hash: string; at: number; dirty: 0 | 1; deleted: boolean }

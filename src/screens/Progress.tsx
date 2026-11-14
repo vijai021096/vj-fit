@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { AlertTriangle, Award, Camera, Check, ImageOff, LineChart as LC, Lock, Ruler, Scale, Trash2 } from 'lucide-react'
-import { useStore, usePerson } from '../store'
-import type { Person, SessionLog } from '../types'
+import { useStore, usePerson, useWeightHidden } from '../store'
+import { NAME, type Person, type SessionLog } from '../types'
 import { db, dayId, setWeight, useLive, type MeasureRow, type PhotoRow, type WeightRow } from '../db'
 import { usePosition, useSessions } from '../lib/hooks'
 import { addDays, dateOf, diffDays, fmtDate, week1Start } from '../engine/calendar'
@@ -22,6 +22,7 @@ const POSES = ['front', 'side', 'back', 'relaxed'] as const
 
 export function Progress() {
   const person = usePerson()
+  const hidden = useWeightHidden(person)
   const pos = usePosition()
   const sessions = useSessions()
   const weights = useLive<WeightRow[] | undefined>(() => db.weights.where('person').equals(person).sortBy('date'), [person], undefined)
@@ -32,7 +33,7 @@ export function Progress() {
       <motion.h1 variants={item} className="display text-[30px] font-semibold">Progress</motion.h1>
       <motion.div variants={item}><button type="button" onClick={() => useStore.getState().open({ type: 'insights' })} className="w-full mt-3 card p-4 flex items-center gap-3 text-left min-h-[64px]"><span className="w-11 h-11 rounded-2xl accent-grad grid place-items-center text-[#08080c]"><LC size={20} /></span><span className="flex-1"><span className="block font-semibold text-[16px]">Insights</span><span className="block text-[13px] text-mute">Calories eaten &amp; burnt, workouts, steps — you and Varsha/Vikas</span></span></button></motion.div>
       <motion.div variants={item}><Headline person={person} weights={weights} measures={measures} /></motion.div>
-      <Section title="Weight"><WeightChart person={person} weights={weights} today={pos.date} /></Section>
+      <Section title="Weight">{hidden ? <Card><p className="text-[14px] text-mute">{NAME[person]} has chosen to keep their weight private.</p></Card> : <WeightChart person={person} weights={weights} today={pos.date} />}</Section>
       <Section title="Measurements"><Measurements person={person} measures={measures} today={pos.date} /></Section>
       <Section title="Progress photos"><Photos person={person} today={pos.date} /></Section>
       <Section title="★ Lifts"><Lifts person={person} sessions={sessions} /></Section>
@@ -43,6 +44,7 @@ export function Progress() {
 }
 
 function Headline({ person, weights, measures }: { person: Person; weights: WeightRow[]; measures: MeasureRow[] }) {
+  const hidden = useWeightHidden(person)
   const first = measures[0], last = measures[measures.length - 1]
   const ratio = (m?: MeasureRow) => (m?.v.shoulders && m?.v.hips ? m.v.shoulders / m.v.hips : null)
   const avg = movingAvg(weights)
@@ -59,7 +61,7 @@ function Headline({ person, weights, measures }: { person: Person; weights: Weig
           <Tile label="Shoulder : hip" value={ratio(last)?.toFixed(2) ?? '—'} sub={ratio(first) && ratio(last) && first !== last ? `${(ratio(last)! - ratio(first)!) >= 0 ? '+' : ''}${(ratio(last)! - ratio(first)!).toFixed(2)} since you started` : 'Add measurements to track'} />
           <Tile label="Waist trend" value={dWaist === null ? '—' : `${dWaist > 0 ? '+' : ''}${dWaist.toFixed(1)} cm`} sub={last?.v.waist ? `Now ${last.v.waist} cm` : 'Add measurements to track'} />
         </> : <>
-          <Tile label="7-day average" value={avg.length ? `${avg[avg.length - 1].avg.toFixed(1)} kg` : '—'} sub={dW === null ? 'Log a few weigh-ins' : `${dW >= 0 ? '+' : ''}${dW.toFixed(1)} kg since you started`} />
+          <Tile label="7-day average" value={hidden ? 'Hidden' : avg.length ? `${avg[avg.length - 1].avg.toFixed(1)} kg` : '—'} sub={hidden ? 'Private' : dW === null ? 'Log a few weigh-ins' : `${dW >= 0 ? '+' : ''}${dW.toFixed(1)} kg since you started`} />
           <Tile label="Waist" value={last?.v.waist ? `${last.v.waist} cm` : '—'} sub={dWaist === null ? 'Add measurements to track' : `${dWaist > 0 ? '+' : ''}${dWaist.toFixed(1)} cm since you started`} />
         </>}
       </div>

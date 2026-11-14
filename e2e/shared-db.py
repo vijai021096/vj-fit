@@ -13,6 +13,7 @@ async def phone(b,name):
     return ctx,pg
 async def settings(pg):
     await pg.get_by_role('button',name='Settings').click(); await pg.wait_for_timeout(500)
+    if await pg.get_by_role('tab',name='Data').count(): await pg.get_by_role('tab',name='Data').click(); await pg.wait_for_timeout(300)
 async def status(pg):
     return await pg.get_by_test_id('sync-status').inner_text()
 async def main():
@@ -21,6 +22,7 @@ async def main():
         ctxA,A=await phone(b,'A')
         await A.get_by_text('Start as Vikas').click(); await A.get_by_text('Build my plan').click(); await A.wait_for_timeout(700)
         await A.get_by_role('button',name='Got it').click(); await A.wait_for_timeout(300)
+        if await A.get_by_role('dialog',name='Whose phone is this?').count(): await A.get_by_role('button',name='I’m Vikas').click(); await A.wait_for_timeout(300)
         # wrong key first
         await settings(A)
         await A.get_by_label('Household key').fill('definitely-not-the-key-123')
@@ -50,6 +52,7 @@ async def main():
         await B.reload(); await B.wait_for_timeout(1500)
         await B.get_by_text('Start as Vikas').click(); await B.wait_for_timeout(1000)
         if await B.get_by_role('button',name='Got it').count(): await B.get_by_role('button',name='Got it').click(); await B.wait_for_timeout(300)
+        if await B.get_by_role('dialog',name='Whose phone is this?').count(): await B.get_by_role('button',name='I’m Vikas').click(); await B.wait_for_timeout(300)
         check('B skipped onboarding — Vikas profile came from the shared DB', await B.get_by_role('button',name='Settings').count()==1)
         await settings(B)
         check('B connected', 'Up to date' in await status(B), await status(B))

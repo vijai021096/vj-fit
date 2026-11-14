@@ -22,8 +22,8 @@ export function Chip({ children, tone = 'default', className, onClick }: { child
   return <C onClick={onClick} className={cx('inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium num whitespace-nowrap', onClick && 'min-h-[40px]', tones[tone], className)}>{children}</C>
 }
 
-export function Card({ children, className, onClick, layoutId }: { children: ReactNode; className?: string; onClick?: () => void; layoutId?: string }) {
-  return <motion.div layoutId={layoutId} onClick={onClick} className={cx('card p-4', onClick && 'cursor-pointer active:scale-[0.99] transition-transform', className)}>{children}</motion.div>
+export function Card({ children, className, onClick, layoutId, id, 'data-testid': testId }: { children: ReactNode; className?: string; onClick?: () => void; layoutId?: string; id?: string; 'data-testid'?: string }) {
+  return <motion.div id={id} data-testid={testId} layoutId={layoutId} onClick={onClick} className={cx('card p-4', onClick && 'cursor-pointer active:scale-[0.99] transition-transform', className)}>{children}</motion.div>
 }
 
 export function Ticker({ value, digits = 0, className }: { value: number; digits?: number; className?: string }) {

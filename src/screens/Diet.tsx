@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, GlassWater, Pill, Repeat, Send, ShoppingBasket } from 'lucide-react'
+import { Check, GlassWater, Pill, Plus, Repeat, Send, ShoppingBasket, Trash2 } from 'lucide-react'
 import { useStore, usePerson } from '../store'
 import { NAME, PEOPLE, WD_LABEL, WEEKDAYS } from '../types'
-import { patchDay } from '../db'
+import { patchDay, type Extra } from '../db'
 import { useNow, usePosition } from '../lib/hooks'
 import { GLASS, dayIndex, useDay, useMenu } from './Today'
 import { WEEK_THEMES, WHEY_CAP, optionById, swapOptions } from '../engine/rotation'
 import { fmtMin, mealName, waterTarget } from '../engine/nutrition'
 import { groceryList, groceryText } from '../engine/grocery'
 import { istMinutes } from '../engine/calendar'
-import { Bar, Btn, Card, Chip, Section, Segmented, cx, item, stagger } from '../components/ui'
+import { Bar, Btn, Card, Chip, Section, Segmented, Sheet, Stepper, cx, item, stagger } from '../components/ui'
+import { extrasOf } from '../lib/insights'
 
 
 export function Diet() {
@@ -31,8 +32,10 @@ export function Diet() {
   const swaps = isToday ? day.swaps : preview
   const menu = useMenu(person, week, dIdx, swaps)
   const mins = istMinutes(d)
-  const eatenK = isToday ? menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.kcal[c.slot] ?? 0 : 0), 0) : 0
-  const eatenP = isToday ? menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0) : 0
+  const ex = extrasOf(day)
+  const [addOpen, setAddOpen] = useState(false)
+  const eatenK = isToday ? menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.kcal[c.slot] ?? 0 : 0), 0) + ex.kcal : 0
+  const eatenP = isToday ? menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0) + ex.protein : 0
   const nextSlot = isToday ? menu.plan.slots.map((s) => ({ id: s.id, at: menu.times[s.id] ?? 0 })).filter((x) => !day.eaten[x.id] && x.at >= mins - 45).sort((a, b) => a.at - b.at)[0]?.id : null
   const glasses = Math.round(waterTarget(person, profile) / GLASS)
 
@@ -113,6 +116,18 @@ export function Diet() {
           })}
         </div>
 
+        {isToday && <Section title="Not on the plan" right={<span className="text-[13px] text-mute num">{ex.kcal ? `+${Math.round(ex.kcal)} kcal` : ''}</span>}>
+          <Card>
+            {(day.extras ?? []).length === 0 && <p className="text-[14px] text-mute">Had a samosa, skipped lunch for a restaurant meal? Add it so the calories and protein stay honest.</p>}
+            {(day.extras ?? []).map((e) => (
+              <div key={e.id} className="flex items-center gap-2 min-h-[48px] border-b border-line/40 last:border-0" data-testid="extra-row">
+                <div className="flex-1 min-w-0"><div className="text-[15px] truncate">{e.label}</div><div className="text-[12px] text-mute num">≈ {e.kcal} kcal · {e.protein} g protein</div></div>
+                <button type="button" aria-label={`Remove ${e.label}`} className="w-11 h-11 grid place-items-center text-mute" onClick={() => void patchDay(person, pos.date, (x) => { x.extras = (x.extras ?? []).filter((y) => y.id !== e.id) })}><Trash2 size={16} /></button>
+              </div>))}
+            <Btn kind="soft" className="w-full mt-2" onClick={() => setAddOpen(true)}><Plus size={18} /> I ate something else</Btn>
+          </Card></Section>}
+        <AddExtra open={addOpen} onClose={() => setAddOpen(false)} onAdd={(e) => { void patchDay(person, pos.date, (x) => { x.extras = [...(x.extras ?? []), e] }); say(`Added ${e.label}`) }} />
+
         {isToday && <Section title="Water" right={<span className="text-[13px] text-mute num">{(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} / ~{waterTarget(person, profile)} L</span>}>
           <Card><div className="grid grid-cols-7 gap-1.5">{Array.from({ length: glasses }, (_, i) => (
             <button key={i} type="button" aria-label={`Glass ${i + 1} of ${glasses}`} aria-pressed={i < day.water} onClick={() => void patchDay(person, pos.date, (x) => { x.water = x.water === i + 1 ? i : i + 1 })}
@@ -176,5 +191,27 @@ function Grocery({ week, setWeek }: { week: number; setWeek: (w: number) => void
         </Section>))}
       <p className="text-[12px] text-mute mt-4 px-1">Quantities are raw shopping amounts estimated from the week’s menu (e.g. dry dal, uncooked rice). Staples like oil, spices, tea and coffee aren’t listed.</p>
     </div>
+  )
+}
+
+const PRESETS: { label: string; kcal: number; protein: number }[] = [
+  { label: 'Samosa', kcal: 260, protein: 5 }, { label: 'Chai + biscuits', kcal: 120, protein: 2 }, { label: 'Banana', kcal: 105, protein: 1 },
+  { label: 'Boiled egg', kcal: 78, protein: 6 }, { label: 'Fruit bowl', kcal: 90, protein: 1 }, { label: 'Sweet / dessert', kcal: 250, protein: 3 },
+  { label: 'Restaurant meal', kcal: 700, protein: 25 }, { label: 'Protein shake', kcal: 150, protein: 25 },
+]
+
+function AddExtra({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (e: Extra) => void }) {
+  const [label, setLabel] = useState('')
+  const [kcal, setKcal] = useState(200)
+  const [protein, setProtein] = useState(5)
+  return (
+    <Sheet open={open} onClose={onClose} title="I ate something else">
+      <p className="text-[14px] text-mute mb-3">Pick a quick one or type your own. Rough numbers are fine.</p>
+      <div className="flex flex-wrap gap-2">{PRESETS.map((p) => <button key={p.label} type="button" onClick={() => { setLabel(p.label); setKcal(p.kcal); setProtein(p.protein) }} className={cx('min-h-[40px] px-3 rounded-full border text-[13px]', label === p.label ? 'border-a1/60 bg-a1/15' : 'border-line/60 bg-s2')}>{p.label}</button>)}</div>
+      <input aria-label="What did you eat" placeholder="What was it?" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={40} className="mt-3 w-full bg-s2 rounded-xl px-3 min-h-[48px] text-[15px]" />
+      <div className="flex items-center justify-between mt-4"><span className="text-[14px]">Calories</span><Stepper value={kcal} onChange={setKcal} step={25} min={0} max={3000} unit="kcal" label="Calories" /></div>
+      <div className="flex items-center justify-between mt-3"><span className="text-[14px]">Protein</span><Stepper value={protein} onChange={setProtein} step={1} min={0} max={150} unit="g" label="Protein" /></div>
+      <Btn className="w-full mt-5" onClick={() => { onAdd({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, label: label.trim() || 'Something else', kcal, protein }); setLabel(''); onClose() }}>Add to today</Btn>
+    </Sheet>
   )
 }

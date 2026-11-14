@@ -1,10 +1,10 @@
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
 import { BookOpen, CalendarDays, Home, LineChart, Salad, Settings as Cog } from 'lucide-react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useStore, type Tab } from './store'
 import { NAME, PEOPLE, type Person } from './types'
-import { Skeletons, cx, spring } from './components/ui'
+import { Btn, Sheet, Skeletons, cx, spring } from './components/ui'
 import { Onboarding, ProfileForm, InstallGuide } from './screens/Onboarding'
 import { Today } from './screens/Today'
 import { maybeAdjust } from './lib/adjust'
@@ -35,6 +35,8 @@ export default function App() {
   const sync = useSync()
   const overlay = useStore((s) => s.overlay)
   const toast = useStore((s) => s.toast)
+  const me = useStore((s) => s.me)
+  const [askLater, setAskLater] = useState(false)
   const { setTab, open, setPerson } = useStore.getState()
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
 
@@ -50,6 +52,8 @@ export default function App() {
     return () => mq.removeEventListener('change', apply)
   }, [theme])
   useEffect(() => { document.documentElement.dataset.person = person ?? 'vikas'; if (person) void maybeAdjust(person) }, [person])
+  // Open on your own profile every time the app starts (the other one is a tap away).
+  useEffect(() => { const m = useStore.getState().me; if (m && useStore.getState().profiles[m].onboarded) setPerson(m) }, []) // eslint-disable-line
   useEffect(() => { void navigator.storage?.persist?.().catch(() => false) }, [])
   useEffect(() => { document.getElementById('main')?.scrollTo(0, 0) }, [tab, person])
 
@@ -80,6 +84,11 @@ export default function App() {
                 <button type="button" aria-label="Settings" onClick={() => open({ type: 'settings' })} className="relative w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Cog size={18} />{sync.linked && <span data-testid="sync-dot" data-state={sync.state} className={cx('absolute top-2 right-2 w-2.5 h-2.5 rounded-full border border-bg', sync.state === 'idle' ? 'bg-ok' : sync.state === 'syncing' ? 'bg-a1 animate-pulse' : 'bg-warn')} />}</button>
               </div>
             </header>
+            {me && person && person !== me && (
+              <div className="shrink-0 px-4 py-2 flex items-center gap-3 bg-s2 border-b border-line/50 text-[13px]" data-testid="viewing-banner">
+                <span className="flex-1">Viewing <b>{NAME[person]}</b>. Anything you log goes on {NAME[person]}’s record.</span>
+                <button type="button" onClick={() => setPerson(me)} className="min-h-[36px] px-3 rounded-xl accent-grad text-[#08080c] font-semibold">Back to mine</button>
+              </div>)}
             <main className="flex-1 overflow-y-auto no-scrollbar" id="main">
               <AnimatePresence mode="wait">
                 <motion.div key={tab + person} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="px-4 pt-4 pb-8">
@@ -113,6 +122,10 @@ export default function App() {
               {overlay?.type === 'review' && <Review key="review" />}
               {overlay?.type === 'profile' && <ProfileForm key="profile" person={overlay.person} sheet />}
             </Suspense>
+            <Sheet open={!me && !askLater && !overlay && !!ready && (standalone || flags.install)} onClose={() => setAskLater(true)} title="Whose phone is this?">
+              <p className="text-[14px] text-mute mb-4">The app opens on your profile and flags when you’re looking at the other one, so nothing gets logged on the wrong person. Both of you still see everything.</p>
+              <div className="grid grid-cols-2 gap-3">{PEOPLE.map((p) => <Btn key={p} kind={p === 'vikas' ? 'primary' : 'soft'} onClick={() => { useStore.getState().set((x) => { x.me = p }); setPerson(p) }}>I’m {NAME[p]}</Btn>)}</div>
+            </Sheet>
             <InstallGuide open={overlay?.type === 'install' || (!standalone && !flags.install && !overlay)} />
           </div>
         )}

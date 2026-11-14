@@ -36,6 +36,8 @@ const blank = (sex: 'male' | 'female'): Profile => ({
 
 interface State {
   person: Person | null
+  /** Whose phone this is. Local only — never synced. */
+  me: Person | null
   profiles: Record<Person, Profile>
   avatars: Partial<Record<Person, string>>
   settings: { programStart: string; mergeDay0: boolean; theme: 'dark' | 'light' | 'system'; sounds: boolean; creatine: boolean }
@@ -63,6 +65,7 @@ export const useStore = create<State>()(
   persist(
     (set, get) => ({
       person: null,
+      me: null,
       profiles: { vikas: blank('male'), varsha: blank('female') },
       avatars: {},
       settings: { programStart: DEFAULT_START, mergeDay0: false, theme: 'dark', sounds: true, creatine: true },
@@ -99,7 +102,7 @@ export const useStore = create<State>()(
     {
       name: 'v2fit-store',
       version: 1,
-      partialize: (s) => ({ person: s.person, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, content: s.content, contentAt: s.contentAt, active: s.active, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
+      partialize: (s) => ({ person: s.person, me: s.me, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, content: s.content, contentAt: s.contentAt, active: s.active, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
       migrate: (persisted) => persisted as State,
       merge: (persisted, current) => ({ ...current, ...(persisted as object), content: { programs: {}, meals: {}, ...((persisted as Partial<State>)?.content ?? {}) }, contentAt: (persisted as Partial<State>)?.contentAt ?? {} }),
     },
@@ -108,3 +111,6 @@ export const useStore = create<State>()(
 
 export const usePerson = () => useStore((s) => s.person) ?? 'vikas'
 export const useProfile = () => { const p = usePerson(); return useStore((s) => s.profiles[p]) }
+
+/** True when `person` asked to hide their weight and this phone belongs to someone else. */
+export const useWeightHidden = (person: Person) => useStore((s) => !!s.profiles[person].hideWeight && !!s.me && s.me !== person)

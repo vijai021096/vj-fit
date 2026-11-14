@@ -33,6 +33,7 @@ export function Settings() {
   const [imp, setImp] = useState<string | null>(null)
   const [confirm, setConfirm] = useState(false)
   const [photos, setPhotos] = useState(false)
+  const [tab, setTab] = useState<'you' | 'plan' | 'data'>('you')
   const file = useRef<HTMLInputElement>(null)
   const sunStart = weekdayOf(s.settings.programStart) === 'sun'
 
@@ -56,10 +57,18 @@ export function Settings() {
           <button type="button" aria-label="Back" onClick={() => s.open(null)} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><ArrowLeft size={20} /></button>
           <h1 className="display font-semibold text-[20px]">Settings</h1>
         </div>
+        <div className="px-4 pb-2"><Segmented id="set-tab" value={tab} onChange={setTab} options={[{ value: 'you', label: 'You' }, { value: 'plan', label: 'Plan' }, { value: 'data', label: 'Data' }]} /></div>
         <div className="flex-1 overflow-y-auto px-4 pb-10 no-scrollbar">
-          <Section title={`${NAME[person]}’s profile`} className="!mt-2">
+          {tab === 'you' && <>
+          <Section title="This phone" className="!mt-2">
             <Card>
-              <div className="grid grid-cols-4 gap-2 text-center mb-2">{[['Height', `${p.heightCm} cm`], ['Weight', `${p.weightKg} kg`], ['Age', `${p.age}`], ['Gym', p.gymTime]].map(([l, v]) => <div key={l} className="rounded-xl bg-s2 py-2"><div className="display font-semibold num">{v}</div><div className="text-[11px] text-mute">{l}</div></div>)}</div>
+              <Row label="Whose phone is this?" sub="The app opens on this person and warns when you’re viewing the other."><Segmented id="set-me" small value={s.me ?? 'none'} onChange={(v) => s.set((x) => { x.me = v === 'none' ? null : v })} options={[{ value: 'vikas', label: 'Vikas' }, { value: 'varsha', label: 'Varsha' }]} /></Row>
+              <Row label="Hide my weight from the other phone" sub="Hides your kg and weight chart when the other person views you. A courtesy, not a lock: both phones share the same data."><Toggle label="Hide my weight" on={!!s.profiles[s.me ?? person].hideWeight} onChange={(v) => s.set((x) => { x.profiles[x.me ?? person].hideWeight = v })} /></Row>
+            </Card>
+          </Section>
+          <Section title={`${NAME[person]}’s profile`}>
+            <Card>
+              <div className="grid grid-cols-4 gap-2 text-center mb-2">{[['Height', `${p.heightCm} cm`], ['Weight', p.hideWeight && s.me && s.me !== person ? 'Hidden' : `${p.weightKg} kg`], ['Age', `${p.age}`], ['Gym', p.gymTime]].map(([l, v]) => <div key={l} className="rounded-xl bg-s2 py-2"><div className="display font-semibold num">{v}</div><div className="text-[11px] text-mute">{l}</div></div>)}</div>
               <div className="text-[13px] text-mute num">BMR ≈ {t.bmr} · TDEE ≈ {t.tdee} · Target ≈ {t.kcal} kcal · Protein ≈ {t.protein} g{t.floored ? ' · at the 1,350 floor' : ''}</div>
               <Btn kind="soft" className="w-full mt-3" onClick={() => s.open({ type: 'profile', person })}>Edit stats, gym time and diet</Btn>
               <Row label="Diet" sub="Veg-only removes egg meals"><Segmented id="set-veg" small value={p.veg ? 'veg' : 'egg'} onChange={(v) => s.set((x) => { x.profiles[person].veg = v === 'veg' })} options={[{ value: 'egg', label: 'Eggetarian' }, { value: 'veg', label: 'Veg' }]} /></Row>
@@ -68,9 +77,9 @@ export function Settings() {
             </Card>
           </Section>
 
-          <SyncPanel />
-
-          <Section title="Program">
+          </>}
+          {tab === 'plan' && <>
+          <Section title="Program" className="!mt-2">
             <Card>
               <Btn className="w-full mb-2" onClick={() => s.open({ type: 'editor', tab: 'workout' })}><Pencil size={18} /> Edit workouts and meals</Btn>
               <Row label="Program start date" sub={`Week 1 starts ${fmtDate(week1Start(s.settings.programStart))} · ends ${fmtDate(programEnd(s.settings.programStart), { day: 'numeric', month: 'short', year: 'numeric' })}`}>
@@ -81,6 +90,8 @@ export function Settings() {
             </Card>
           </Section>
 
+          </>}
+          {tab === 'you' && <>
           <Section title="App">
             <Card>
               <Row label="Theme"><Segmented id="theme" small value={s.settings.theme} onChange={(v) => s.set((x) => { x.settings.theme = v })} options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'Auto' }]} /></Row>
@@ -89,6 +100,10 @@ export function Settings() {
               <Btn kind="soft" className="w-full mt-3" onClick={() => s.open({ type: 'install' })}><Smartphone size={18} /> How to install on iPhone</Btn>
             </Card>
           </Section>
+
+          </>}
+          {tab === 'data' && <>
+          <SyncPanel />
 
           <Section title="Offline media">
             <Card>
@@ -119,6 +134,7 @@ export function Settings() {
               <Btn kind="danger" className="w-full mt-4" onClick={() => setConfirm(true)}><Trash2 size={18} /> Reset everything</Btn>
             </Card>
           </Section>
+          </>}
         </div>
       </div>
       <Sheet open={!!imp} onClose={() => setImp(null)} title="Import backup">

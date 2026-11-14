@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, ArrowRight, Check, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils } from 'lucide-react'
-import { useStore, usePerson } from '../store'
+import { useStore, usePerson, useWeightHidden } from '../store'
 import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
 import { db, dayId, patchDay, setWeight, useLive, type DayRow } from '../db'
 import { useNow, usePosition, useSessions } from '../lib/hooks'
@@ -10,10 +10,11 @@ import { PROGRAMS, resolveSession, sessionMuscles } from '../engine/program'
 import { addDays, fmtDate, greeting, istClock, istLong, istMinutes, week1Start } from '../engine/calendar'
 import { streak, weekKeys, otherPerson } from '../lib/history'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
-import { fmtMin, mealName, mealTimes, scaleDay, targets } from '../engine/nutrition'
+import { fmtMin, mealName, mealTimes, scaleDay, targets, waterTarget } from '../engine/nutrition'
 import { BodyMap } from '../components/BodyMap'
 import { Btn, Card, Chip, Ring, Section, Sheet, Stepper, Ticker, cx, item, stagger } from '../components/ui'
 import { downloadBackup } from '../lib/backup'
+import { extrasOf } from '../lib/insights'
 
 const WATER_L: Record<Person, number> = { vikas: 3.5, varsha: 2.75 }
 const STEPS: Record<Person, number> = { vikas: 7500, varsha: 9500 }
@@ -46,6 +47,7 @@ export function Today() {
   const settings = useStore((s) => s.settings)
   const flags = useStore((s) => s.flags)
   const active = useStore((s) => s.active[person])
+  const weightHidden = useWeightHidden(person)
   const { open, setTab, set, say } = useStore.getState()
   const d = useNow(15000)
   const pos = usePosition()
@@ -83,7 +85,7 @@ export function Today() {
   const next = menu.plan.slots.map((s) => ({ s, at: menu.times[s.id] ?? 0 })).filter((x) => !day.eaten[x.s.id]).sort((a, b) => a.at - b.at).find((x) => x.at >= mins - 45)
   const nextOpt = next ? menu.chosen.find((c) => c.slot === next.s.id)!.option : null
   const until = next ? Math.round(next.at - mins) : 0
-  const proteinEaten = menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0)
+  const proteinEaten = menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0) + extrasOf(day).protein
   const stk = streak(sessions ?? [], pos.date, settings.programStart)
   const positionLabel = pos.phase === 'program' ? `Month ${pos.month} · Week ${pos.weekInMonth} · ${res && 'mod' in res ? res.mod.name : ''} · Day ${pos.dayNumber}${pos.cycle > 1 ? ` · Cycle ${pos.cycle}` : ''}`
     : pos.phase === 'day0' ? 'Day 0 · Orientation' : pos.phase === 'before' ? `Starts ${fmtDate(settings.programStart)}` : 'Week 1 starts tomorrow'
@@ -92,6 +94,19 @@ export function Today() {
     const title = isDay0 ? 'Day 0 — Orientation' : PROGRAMS[person].days[wd].title
     startSession(person, pos, { weekday: wd, isDay0, title })
   }
+  const [gh, gm] = profile.gymTime.split(':').map(Number)
+  const gymAt = (gh || 7) * 60 + (gm || 0)
+  const workoutDue = !active && !thisDone && plan.kind === 'day' && !!res && res.def.kind !== 'rest' && res.def.kind !== 'active' && mins >= gymAt - 30 && mins <= gymAt + 150
+  const glassesTarget = Math.round(waterTarget(person, profile) / GLASS)
+  const glassesByNow = Math.round(glassesTarget * Math.min(1, Math.max(0, (mins - 7 * 60) / (21 * 60 - 7 * 60))))
+  const nextAction: { title: string; sub: string; cta: string; go: () => void } | null = (() => {
+    if (pos.phase === 'before' || active || workoutDue) return null
+    if (next && nextOpt && until <= 20) return { title: `${until <= 0 ? 'Time for' : 'Soon:'} ${next.s.label.toLowerCase()}`, sub: `${mealName(nextOpt, menu.scaled.qty[next.s.id])} · ≈ ${menu.scaled.kcal[next.s.id]} kcal`, cta: 'Ate it', go: () => { void patchDay(person, pos.date, (x) => { x.eaten[next.s.id] = true }); say(`${next.s.label} logged`) } }
+    if (glassesByNow - day.water >= 2) return { title: 'Drink some water', sub: `${day.water} of ${glassesTarget} glasses so far. About ${glassesByNow} by now.`, cta: '+1 glass', go: () => { void patchDay(person, pos.date, (x) => { x.water += 1 }); say('+1 glass (250 ml)') } }
+    if (!todayW && mins < 12 * 60) return { title: 'Morning weigh-in', sub: 'After the toilet, before food.', cta: 'Weigh in', go: () => document.getElementById('weigh-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+    if (!day.steps && mins >= 18 * 60) return { title: 'Log today’s steps', sub: 'From the Health app.', cta: 'Add steps', go: () => setStepsOpen(true) }
+    return null
+  })()
   const needsReview = pos.phase === 'program' && pos.cycle > (flags.reviewDone[person] ?? 1)
   const backupDue = (sessions?.length ?? 0) >= 3 && Date.now() - Math.max(flags.lastBackup, flags.backupNudge) > 7 * 86400000
 
@@ -107,6 +122,11 @@ export function Today() {
       </motion.div>
 
       {needsReview && <motion.div variants={item}><Card className="mt-4 border-a1/50" onClick={() => open({ type: 'review' })}><div className="flex items-center gap-3"><Sparkles className="accent-text" /><div className="flex-1"><div className="font-semibold">12 weeks done — your Program Review is ready</div><div className="text-[13px] text-mute">See your trends, then start Cycle {pos.cycle}.</div></div><ArrowRight size={18} /></div></Card></motion.div>}
+
+      {nextAction && <motion.div variants={item}><Card className="mt-4 border-a1/50" data-testid="next-action">
+        <div className="text-[12px] uppercase tracking-widest accent-text font-semibold">Do next</div>
+        <div className="flex items-center gap-3 mt-1"><div className="flex-1 min-w-0"><div className="display text-[20px] font-semibold">{nextAction.title}</div><div className="text-[13px] text-mute">{nextAction.sub}</div></div><Btn onClick={nextAction.go}>{nextAction.cta}</Btn></div>
+      </Card></motion.div>}
 
       {/* Hero workout */}
       <motion.div variants={item} className="mt-4">
@@ -160,8 +180,8 @@ export function Today() {
         {[
           { l: 'Protein', v: proteinEaten / Math.max(1, menu.t.protein), txt: `${Math.round(proteinEaten)} g`, icon: <Utensils size={16} />, on: () => setTab('diet') },
           { l: 'Water', v: (day.water * GLASS) / WATER_L[person], txt: `${(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} L`, icon: <Droplets size={16} />, on: () => { void patchDay(person, pos.date, (x) => { x.water += 1 }); say('+1 glass (250 ml)') } },
-          { l: 'Steps', v: day.steps / STEPS[person], txt: day.steps ? `${(day.steps / 1000).toFixed(1)}k` : 'Add', icon: <Footprints size={16} />, on: () => setStepsOpen(true) },
-          { l: 'Workout', v: thisDone || doneToday ? 1 : active ? 0.5 : 0, txt: thisDone || doneToday ? 'Done' : active ? 'Going' : '—', icon: <Dumbbell size={16} />, on: () => active && open({ type: 'session' }) },
+          { l: 'Steps', v: day.steps / STEPS[person], txt: day.steps ? `${(day.steps / 1000).toFixed(1)}k` : 'Log', icon: <Footprints size={16} />, on: () => setStepsOpen(true) },
+          { l: 'Workout', v: thisDone || doneToday ? 1 : active ? 0.5 : 0, txt: thisDone || doneToday ? 'Done' : active ? 'Going' : res && res.def.kind === 'rest' ? 'Rest' : 'Not yet', icon: <Dumbbell size={16} />, on: () => active && open({ type: 'session' }) },
         ].map((r) => (
           <button key={r.l} type="button" onClick={r.on} aria-label={`${r.l}: ${r.txt}`} className="card p-2.5 flex flex-col items-center gap-1 active:scale-[0.97] transition-transform">
             <Ring value={r.v} size={58} stroke={6}><span className="accent-text">{r.icon}</span></Ring>
@@ -178,7 +198,7 @@ export function Today() {
       </Card></motion.div>}
 
       {/* Quick weigh-in */}
-      <motion.div variants={item}><Card className="mt-3">
+      {!weightHidden && <motion.div variants={item}><Card className="mt-3" id="weigh-card">
         <div className="flex items-center justify-between gap-2">
           <div><div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Quick weigh-in</div><div className="text-[12px] text-mute">Morning, after the toilet, before food</div></div>
           {todayW && <Chip tone="ok"><Check size={13} /> {todayW.kg} kg</Chip>}
@@ -187,7 +207,7 @@ export function Today() {
           <Stepper value={kg} onChange={setKg} step={0.1} min={30} max={200} unit="kg" label="Body weight" big />
           <Btn kind={todayW ? 'soft' : 'primary'} onClick={async () => { await setWeight(person, pos.date, kg); set((s) => { s.profiles[person].weightKg = kg }); say('Weight saved') }}>{todayW ? 'Update' : 'Save'}</Btn>
         </div>
-      </Card></motion.div>
+      </Card></motion.div>}
 
       {profile.adjustReason && <motion.div variants={item}><Card className="mt-3"><div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Calories check-in</div><p className="text-[14px] mt-1">{profile.adjustReason}</p></Card></motion.div>}
 
@@ -247,7 +267,7 @@ function Together() {
             </button>)
         })}
       </div>
-      <p className="text-[12px] text-mute mt-2 px-1">This shows what’s logged on <em>this</em> phone. Each phone keeps its own data — use Settings → Backup → Merge to share logs with {NAME[otherPerson(me)]}.</p>
+      <p className="text-[12px] text-mute mt-2 px-1">Both phones read the same shared data, so this is live for {NAME[otherPerson(me)]} too. Tap a card to view that person.</p>
     </div>
   )
 }
