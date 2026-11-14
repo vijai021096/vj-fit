@@ -8,6 +8,8 @@ import { Btn, Sheet, Skeletons, cx, spring } from './components/ui'
 import { Onboarding, ProfileForm, InstallGuide } from './screens/Onboarding'
 import { Today } from './screens/Today'
 import { maybeAdjust } from './lib/adjust'
+import { patchDay } from './db'
+import { PLANS } from './engine/rotation'
 import { useSync } from './lib/sync'
 const Plan = lazy(() => import('./screens/Plan').then((m) => ({ default: m.Plan })))
 const Diet = lazy(() => import('./screens/Diet').then((m) => ({ default: m.Diet })))
@@ -37,6 +39,7 @@ export default function App() {
   const toast = useStore((s) => s.toast)
   const me = useStore((s) => s.me)
   const [askLater, setAskLater] = useState(false)
+  const [meal, setMeal] = useState<{ slot: string; date: string; person: Person } | null>(null)
   const { setTab, open, setPerson } = useStore.getState()
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
 
@@ -54,6 +57,21 @@ export default function App() {
   useEffect(() => { document.documentElement.dataset.person = person ?? 'vikas'; if (person) void maybeAdjust(person) }, [person])
   // Open on your own profile every time the app starts (the other one is a tap away).
   useEffect(() => { const m = useStore.getState().me; if (m && useStore.getState().profiles[m].onboarded) setPerson(m) }, []) // eslint-disable-line
+  // Reminder taps: "Ate it" arrives as a message; a plain tap (iPhone) arrives as a message or as ?meal= in the address.
+  useEffect(() => {
+    const ok = (d: { slot?: string; date?: string; person?: string }) => !!d.slot && /^\d{4}-\d{2}-\d{2}$/.test(d.date ?? '') && (d.person === 'vikas' || d.person === 'varsha')
+    const q = new URLSearchParams(location.search)
+    const first = { slot: q.get('meal') ?? undefined, date: q.get('date') ?? undefined, person: q.get('p') ?? undefined }
+    if (ok(first)) { setMeal(first as { slot: string; date: string; person: Person }); history.replaceState(null, '', location.pathname) }
+    const on = (e: MessageEvent) => {
+      const d = e.data ?? {}
+      if (!ok(d)) return
+      if (d.type === 'v2fit-ate') { void patchDay(d.person, d.date, (x) => { x.eaten[d.slot] = true }); useStore.getState().say('Meal logged') }
+      else if (d.type === 'v2fit-meal') setMeal({ slot: d.slot, date: d.date, person: d.person })
+    }
+    navigator.serviceWorker?.addEventListener('message', on)
+    return () => navigator.serviceWorker?.removeEventListener('message', on)
+  }, [])
   useEffect(() => { void navigator.storage?.persist?.().catch(() => false) }, [])
   useEffect(() => { document.getElementById('main')?.scrollTo(0, 0) }, [tab, person])
 
@@ -125,6 +143,12 @@ export default function App() {
             <Sheet open={!me && !askLater && !overlay && !!ready && (standalone || flags.install)} onClose={() => setAskLater(true)} title="Whose phone is this?">
               <p className="text-[14px] text-mute mb-4">The app opens on your profile and flags when you’re looking at the other one, so nothing gets logged on the wrong person. Both of you still see everything.</p>
               <div className="grid grid-cols-2 gap-3">{PEOPLE.map((p) => <Btn key={p} kind={p === 'vikas' ? 'primary' : 'soft'} onClick={() => { useStore.getState().set((x) => { x.me = p }); setPerson(p) }}>I’m {NAME[p]}</Btn>)}</div>
+            </Sheet>
+            <Sheet open={!!meal} onClose={() => setMeal(null)} title={meal ? `${PLANS[meal.person].slots.find((x) => x.id === meal.slot)?.label ?? 'Meal'}: did you eat it?` : ''}>
+              <div className="grid grid-cols-2 gap-3 pb-2" data-testid="meal-prompt">
+                <Btn kind="primary" onClick={() => { if (meal) { void patchDay(meal.person, meal.date, (x) => { x.eaten[meal.slot] = true }); useStore.getState().say('Meal logged') } setMeal(null) }}>Ate it</Btn>
+                <Btn kind="soft" onClick={() => setMeal(null)}>Skip</Btn>
+              </div>
             </Sheet>
             <InstallGuide open={overlay?.type === 'install' || (!standalone && !flags.install && !overlay)} />
           </div>

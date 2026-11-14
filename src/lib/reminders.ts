@@ -5,9 +5,10 @@ import { addDays, position } from '../engine/calendar'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
 import { fmtMin, mealName, mealTimes, scaleDay, targets, waterTarget } from '../engine/nutrition'
 import { PROGRAMS } from '../engine/program'
+import { quoteFor } from '../data/quotes'
 import { DEFAULT_API, call, getCfg } from './sync'
 
-export interface ReminderItem { date: string; at: number; title: string; body: string; img?: string }
+export interface ReminderItem { date: string; at: number; title: string; body: string; img?: string; slot?: string }
 const FLAG = 'v2fit-reminders'
 const DAYS_AHEAD = 7
 
@@ -32,12 +33,13 @@ export function buildItems(person: Person, today: string, st: { programStart: st
       const at = times[c.slot]
       if (at == null) continue
       const label = plan.slots.find((s) => s.id === c.slot)!.label
-      out.push({ date, at, title: `${label} at ${fmtMin(at)}`, body: `${mealName(c.option, sc.qty[c.slot])} · ≈ ${sc.kcal[c.slot]} kcal, ${sc.protein[c.slot]} g protein`, img: c.option.id })
+      out.push({ date, at, title: `${label} at ${fmtMin(at)}`, body: `${mealName(c.option, sc.qty[c.slot])} · ≈ ${sc.kcal[c.slot]} kcal, ${sc.protein[c.slot]} g protein`, img: c.option.id, slot: c.slot })
     }
     const def = pos.phase === 'program' ? PROGRAMS[person].days[pos.weekday] : null
     if (def && def.kind !== 'rest' && def.kind !== 'active') out.push({ date, at: Math.max(0, gymAt - 15), title: 'Gym in 15 minutes', body: def.title })
     const glasses = Math.round(waterTarget(person, profile) / 0.25)
-    for (const at of [11 * 60, 15 * 60, 19 * 60]) out.push({ date, at, title: 'Drink some water', body: `Aim for ${glasses} glasses today (about 250 ml each).` })
+    out.push({ date, at: 15 * 60, title: 'Gym o’clock 💪', body: quoteFor(date) })
+    for (const at of [11 * 60, 16 * 60, 19 * 60]) out.push({ date, at, title: 'Drink some water', body: `Aim for ${glasses} glasses today (about 250 ml each).` })
   }
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.at - b.at)
 }

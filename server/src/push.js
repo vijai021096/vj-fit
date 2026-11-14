@@ -32,7 +32,7 @@ export function validate(body) {
   if (!person) throw new PushError(400, 'person must be vikas or varsha')
   const raw = Array.isArray(body.items) ? body.items : []
   if (raw.length > 200) throw new PushError(400, 'Too many reminders')
-  const items = raw.map((i) => ({ date: clean(i.date, 10), at: Math.round(Number(i.at)), title: clean(i.title, 80), body: clean(i.body, 160), ...(/^[vr]-[a-z0-9]{1,4}$/.test(i.img ?? '') ? { img: i.img } : {}) }))
+  const items = raw.map((i) => ({ date: clean(i.date, 10), at: Math.round(Number(i.at)), title: clean(i.title, 80), body: clean(i.body, 160), ...(/^[vr]-[a-z0-9]{1,4}$/.test(i.img ?? '') ? { img: i.img } : {}), ...(/^[a-z0-9-]{1,24}$/.test(i.slot ?? '') ? { slot: i.slot } : {}) }))
     .filter((i) => /^\d{4}-\d{2}-\d{2}$/.test(i.date) && Number.isFinite(i.at) && i.at >= 0 && i.at < 1440 && i.title)
   return { sub: { endpoint: sub.endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) } }, person, items }
 }
@@ -82,7 +82,7 @@ export function createPush(db, webpush, log = console.log) {
     /** Send everything due in the last two minutes (covers timer drift), once. */
     async tick(nowMs = Date.now()) {
       const { date, minutes } = istParts(nowMs)
-      const { rows } = await db.query('select device_id, sub, items from push_subs')
+      const { rows } = await db.query('select device_id, sub, person, items from push_subs')
       let n = 0
       for (const r of rows) {
         for (const [i, it] of (r.items ?? []).entries()) {
@@ -90,7 +90,7 @@ export function createPush(db, webpush, log = console.log) {
           const k = `${r.device_id}|${it.date}|${it.at}|${i}`
           if (sent.has(k)) continue
           sent.add(k)
-          if (await deliver(r.device_id, r.sub, { title: it.title, body: it.body, tag: `r-${it.date}-${it.at}`, ...(it.img ? { image: `${FOOD_BASE}${it.img}.webp` } : {}) })) { n++; log(`push sent: ${it.title}`) }
+          if (await deliver(r.device_id, r.sub, { title: it.title, body: it.body, tag: `r-${it.date}-${it.at}`, ...(it.img ? { image: `${FOOD_BASE}${it.img}.webp` } : {}), ...(it.slot ? { data: { slot: it.slot, date: it.date, person: r.person }, actions: [{ action: 'ate', title: 'Ate it' }, { action: 'skip', title: 'Skip' }] } : {}) })) { n++; log(`push sent: ${it.title}`) }
         }
       }
       if (sent.size > 5000) sent.clear()
