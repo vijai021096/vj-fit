@@ -31,11 +31,11 @@ export function ExerciseMedia({ ex, person, className }: { ex: Exercise; person:
   const dur = tempoSeconds(ex.tempo)
   const frame = 'relative overflow-hidden rounded-xl3 bg-s2 border border-line/60 aspect-[4/3]'
   if (hf?.video && !broken) return (
-    <div className={cx(frame, 'aspect-[4/5]', className)}>
+    <div className={cx(frame, '!aspect-video', className)}>
       <video src={hf.video} poster={hf.poster} autoPlay muted loop playsInline className="w-full h-full object-cover" onError={() => setBroken(true)} />
     </div>
   )
-  if (hf?.poster && !broken) return <div className={cx(frame, 'aspect-[4/5]', className)}><img src={hf.poster} alt={ex.name} className="w-full h-full object-cover" onError={() => setBroken(true)} /></div>
+  if (hf?.poster && !broken) return <div className={cx(frame, '!aspect-video', className)}><img src={hf.poster} alt={ex.name} className="w-full h-full object-cover" onError={() => setBroken(true)} /></div>
   if (fb) return (
     <div className={cx(frame, className)}>
       <div className={cx('absolute inset-0', !reduce && 'kenburns')}>

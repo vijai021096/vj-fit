@@ -1,1 +1,218 @@
-{}
+{
+ "arnold-press": {
+  "female": {
+   "video": "/media/hf/arnold-press.female.mp4",
+   "poster": "/media/hf/arnold-press.female.jpg"
+  }
+ },
+ "assisted-dips": {
+  "male": {
+   "video": "/media/hf/assisted-dips.mp4",
+   "poster": "/media/hf/assisted-dips.jpg"
+  }
+ },
+ "assisted-pull-up": {
+  "male": {
+   "video": "/media/hf/assisted-pull-up.mp4",
+   "poster": "/media/hf/assisted-pull-up.jpg"
+  }
+ },
+ "back-squat": {
+  "male": {
+   "video": "/media/hf/back-squat.mp4",
+   "poster": "/media/hf/back-squat.jpg"
+  }
+ },
+ "bb-bench-press": {
+  "male": {
+   "video": "/media/hf/bb-bench-press.mp4",
+   "poster": "/media/hf/bb-bench-press.jpg"
+  }
+ },
+ "cable-curl": {
+  "male": {
+   "video": "/media/hf/cable-curl.mp4",
+   "poster": "/media/hf/cable-curl.jpg"
+  }
+ },
+ "cable-lateral-raise": {
+  "male": {
+   "video": "/media/hf/cable-lateral-raise.mp4",
+   "poster": "/media/hf/cable-lateral-raise.jpg"
+  }
+ },
+ "cable-triceps-pushdown": {
+  "male": {
+   "video": "/media/hf/cable-triceps-pushdown.mp4",
+   "poster": "/media/hf/cable-triceps-pushdown.jpg"
+  }
+ },
+ "chest-supported-row": {
+  "male": {
+   "video": "/media/hf/chest-supported-row.mp4",
+   "poster": "/media/hf/chest-supported-row.jpg"
+  }
+ },
+ "close-grip-bench-press": {
+  "male": {
+   "video": "/media/hf/close-grip-bench-press.mp4",
+   "poster": "/media/hf/close-grip-bench-press.jpg"
+  }
+ },
+ "db-curl": {
+  "male": {
+   "video": "/media/hf/db-curl.mp4",
+   "poster": "/media/hf/db-curl.jpg"
+  }
+ },
+ "db-lateral-raise": {
+  "male": {
+   "video": "/media/hf/db-lateral-raise.mp4",
+   "poster": "/media/hf/db-lateral-raise.jpg"
+  }
+ },
+ "ez-bar-curl": {
+  "male": {
+   "video": "/media/hf/ez-bar-curl.mp4",
+   "poster": "/media/hf/ez-bar-curl.jpg"
+  }
+ },
+ "ez-bar-skull-crusher": {
+  "male": {
+   "video": "/media/hf/ez-bar-skull-crusher.mp4",
+   "poster": "/media/hf/ez-bar-skull-crusher.jpg"
+  }
+ },
+ "face-pull": {
+  "male": {
+   "video": "/media/hf/face-pull.mp4",
+   "poster": "/media/hf/face-pull.jpg"
+  }
+ },
+ "flat-db-press": {
+  "male": {
+   "video": "/media/hf/flat-db-press.mp4",
+   "poster": "/media/hf/flat-db-press.jpg"
+  }
+ },
+ "goblet-squat": {
+  "male": {
+   "video": "/media/hf/goblet-squat.mp4",
+   "poster": "/media/hf/goblet-squat.jpg"
+  }
+ },
+ "hammer-curl": {
+  "male": {
+   "video": "/media/hf/hammer-curl.mp4",
+   "poster": "/media/hf/hammer-curl.jpg"
+  }
+ },
+ "incline-db-curl": {
+  "male": {
+   "video": "/media/hf/incline-db-curl.mp4",
+   "poster": "/media/hf/incline-db-curl.jpg"
+  }
+ },
+ "incline-db-press": {
+  "male": {
+   "video": "/media/hf/incline-db-press.mp4",
+   "poster": "/media/hf/incline-db-press.jpg"
+  }
+ },
+ "incline-push-up": {
+  "female": {
+   "video": "/media/hf/incline-push-up.female.mp4",
+   "poster": "/media/hf/incline-push-up.female.jpg"
+  }
+ },
+ "incline-smith-press": {
+  "male": {
+   "video": "/media/hf/incline-smith-press.mp4",
+   "poster": "/media/hf/incline-smith-press.jpg"
+  }
+ },
+ "inverted-row": {
+  "female": {
+   "video": "/media/hf/inverted-row.female.mp4",
+   "poster": "/media/hf/inverted-row.female.jpg"
+  }
+ },
+ "landmine-press": {
+  "female": {
+   "video": "/media/hf/landmine-press.female.mp4",
+   "poster": "/media/hf/landmine-press.female.jpg"
+  }
+ },
+ "lat-pulldown": {
+  "male": {
+   "video": "/media/hf/lat-pulldown.mp4",
+   "poster": "/media/hf/lat-pulldown.jpg"
+  }
+ },
+ "low-to-high-cable-fly": {
+  "male": {
+   "video": "/media/hf/low-to-high-cable-fly.mp4",
+   "poster": "/media/hf/low-to-high-cable-fly.jpg"
+  }
+ },
+ "machine-chest-press": {
+  "male": {
+   "video": "/media/hf/machine-chest-press.mp4",
+   "poster": "/media/hf/machine-chest-press.jpg"
+  }
+ },
+ "machine-shoulder-press": {
+  "female": {
+   "video": "/media/hf/machine-shoulder-press.female.mp4",
+   "poster": "/media/hf/machine-shoulder-press.female.jpg"
+  }
+ },
+ "neutral-grip-pulldown": {
+  "male": {
+   "video": "/media/hf/neutral-grip-pulldown.mp4",
+   "poster": "/media/hf/neutral-grip-pulldown.jpg"
+  }
+ },
+ "overhead-cable-triceps-extension": {
+  "male": {
+   "video": "/media/hf/overhead-cable-triceps-extension.mp4",
+   "poster": "/media/hf/overhead-cable-triceps-extension.jpg"
+  }
+ },
+ "pec-deck": {
+  "male": {
+   "video": "/media/hf/pec-deck.mp4",
+   "poster": "/media/hf/pec-deck.jpg"
+  }
+ },
+ "reverse-pec-deck": {
+  "female": {
+   "video": "/media/hf/reverse-pec-deck.female.mp4",
+   "poster": "/media/hf/reverse-pec-deck.female.jpg"
+  }
+ },
+ "seated-cable-row": {
+  "male": {
+   "video": "/media/hf/seated-cable-row.mp4",
+   "poster": "/media/hf/seated-cable-row.jpg"
+  }
+ },
+ "seated-db-shoulder-press": {
+  "male": {
+   "video": "/media/hf/seated-db-shoulder-press.mp4",
+   "poster": "/media/hf/seated-db-shoulder-press.jpg"
+  }
+ },
+ "single-arm-db-row": {
+  "male": {
+   "video": "/media/hf/single-arm-db-row.mp4",
+   "poster": "/media/hf/single-arm-db-row.jpg"
+  }
+ },
+ "t-bar-row": {
+  "male": {
+   "video": "/media/hf/t-bar-row.mp4",
+   "poster": "/media/hf/t-bar-row.jpg"
+  }
+ }
+}
