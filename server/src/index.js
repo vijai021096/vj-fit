@@ -1,7 +1,7 @@
 import http from 'node:http'
 import { createApp, DEFAULT_ORIGINS, parseOrigins } from './app.js'
 import { pgDb } from './db.js'
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 import { createPush } from './push.js'
 
 const url = process.env.DATABASE_URL

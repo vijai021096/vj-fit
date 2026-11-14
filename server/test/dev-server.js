@@ -2,7 +2,7 @@
 import http from 'node:http'
 import { createApp } from '../src/app.js'
 import { memDb } from './helpers.js'
-import webpush from 'web-push'
+import * as webpush from 'web-push'
 import { createPush } from '../src/push.js'
 const port = Number(process.argv[2] ?? 8787)
 const db = await memDb()
