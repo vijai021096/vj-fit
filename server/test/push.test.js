@@ -31,8 +31,9 @@ test('push: only reminders that are due are sent, once', async () => {
     const now = Date.UTC(2026, 10, 15, 2, 30)            // 08:00 IST
     const { date } = istParts(now)
     await s.call('PUT', '/api/push/subscription', { token: t, body: { subscription: SUB(), person: 'vikas', items: [
-      { date, at: 480, title: 'Breakfast', body: 'Oats' }, { date, at: 600, title: 'Later', body: '' }, { date: '2026-11-16', at: 480, title: 'Tomorrow', body: '' }] } })
+      { date, at: 480, title: 'Breakfast', body: 'Oats', img: 'v-b2' }, { date, at: 600, title: 'Later', body: '' }, { date: '2026-11-16', at: 480, title: 'Tomorrow', body: '' }] } })
     assert.equal(await s.push.tick(now), 1)
+    assert.equal(w.sent[0].payload.image, 'https://v2-fit.vercel.app/media/food/v-b2.webp')
     assert.equal(await s.push.tick(now + 60000), 0)       // already sent
     assert.deepEqual(w.sent.map((x) => x.payload.title), ['Breakfast'])
     assert.equal(await s.push.tick(now + 120 * 60000), 1) // 10:00 IST → "Later"

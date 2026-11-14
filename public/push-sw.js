@@ -2,7 +2,7 @@
 self.addEventListener('push', (event) => {
   let d = {}
   try { d = event.data ? event.data.json() : {} } catch { d = { title: 'V² Fit', body: event.data ? event.data.text() : '' } }
-  event.waitUntil(self.registration.showNotification(d.title || 'V² Fit', { body: d.body || '', icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: d.tag || undefined }))
+  event.waitUntil(self.registration.showNotification(d.title || 'V² Fit', { body: d.body || '', icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: d.tag || undefined, ...(d.image ? { image: d.image } : {}) }))
 })
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()

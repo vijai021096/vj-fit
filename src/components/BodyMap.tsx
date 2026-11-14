@@ -122,7 +122,7 @@ export function BodyMap(p: Props) {
   const interactive = p.info || !!p.onSelect
   if (p.both) {
     return (
-      <div className={cx('flex items-center justify-center gap-2', p.className)}>
+      <div className={cx('relative flex items-center justify-center gap-2', p.info && tip && 'pb-16', p.className)}>
         <Figure {...p} side="front" height={h} onSelect={interactive ? pick : undefined} />
         <Figure {...p} side="back" height={h} onSelect={interactive ? pick : undefined} />
         {p.info && tip && <Tip id={tip} />}

@@ -7,7 +7,7 @@ import { fmtMin, mealName, mealTimes, scaleDay, targets, waterTarget } from '../
 import { PROGRAMS } from '../engine/program'
 import { DEFAULT_API, call, getCfg } from './sync'
 
-export interface ReminderItem { date: string; at: number; title: string; body: string }
+export interface ReminderItem { date: string; at: number; title: string; body: string; img?: string }
 const FLAG = 'v2fit-reminders'
 const DAYS_AHEAD = 7
 
@@ -32,7 +32,7 @@ export function buildItems(person: Person, today: string, st: { programStart: st
       const at = times[c.slot]
       if (at == null) continue
       const label = plan.slots.find((s) => s.id === c.slot)!.label
-      out.push({ date, at, title: `${label} at ${fmtMin(at)}`, body: `${mealName(c.option, sc.qty[c.slot])} · ≈ ${sc.kcal[c.slot]} kcal, ${sc.protein[c.slot]} g protein` })
+      out.push({ date, at, title: `${label} at ${fmtMin(at)}`, body: `${mealName(c.option, sc.qty[c.slot])} · ≈ ${sc.kcal[c.slot]} kcal, ${sc.protein[c.slot]} g protein`, img: c.option.id })
     }
     const def = pos.phase === 'program' ? PROGRAMS[person].days[pos.weekday] : null
     if (def && def.kind !== 'rest' && def.kind !== 'active') out.push({ date, at: Math.max(0, gymAt - 15), title: 'Gym in 15 minutes', body: def.title })

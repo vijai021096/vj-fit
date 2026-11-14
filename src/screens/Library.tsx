@@ -6,7 +6,7 @@ import type { MuscleId } from '../types'
 import { EX, EXERCISES, exName } from '../data/exercises'
 import { MUSCLE_INFO, SAFETY } from '../data/common'
 import { BodyMap } from '../components/BodyMap'
-import { ExerciseMedia } from '../components/Media'
+import { ExerciseMedia, ExerciseThumb } from '../components/Media'
 import { Card, Chip, Empty, cx, item, stagger } from '../components/ui'
 import { useSessions } from '../lib/hooks'
 import { pastByExercise } from '../lib/history'
@@ -25,6 +25,7 @@ const equipOf = (e: (typeof EXERCISES)[number]) => {
 
 export function Library() {
   const open = useStore((s) => s.open)
+  const person = usePerson()
   const [q, setQ] = useState('')
   const [muscle, setMuscle] = useState<MuscleId | null>(null)
   const [equip, setEquip] = useState<string | null>(null)
@@ -55,7 +56,7 @@ export function Library() {
         {list.map((e) => (
           <button key={e.id} type="button" onClick={() => open({ type: 'exercise', id: e.id })} className="w-full card !rounded-2xl p-2.5 flex items-center gap-3 text-left active:scale-[0.99] transition-transform">
             <div className="w-16 h-12 rounded-xl overflow-hidden bg-s2 shrink-0 grid place-items-center">
-              {e.media.fallback ? <img src={e.media.fallback[0]} alt="" loading="lazy" className="w-full h-full object-cover" /> : <span className="text-[10px] text-mute text-center leading-tight">Demo<br />soon</span>}
+              <ExerciseThumb ex={e} person={person} />
             </div>
             <div className="flex-1 min-w-0"><div className="font-medium truncate">{e.name}</div><div className="text-[12px] text-mute truncate">{e.muscles.primary.map((m) => MUSCLE_INFO[m].name).join(', ') || 'Cardio'} · {equipOf(e)}</div></div>
             <ChevronRight size={16} className="text-mute" />
@@ -87,7 +88,7 @@ export function ExerciseDetail({ id }: { id: string }) {
           <Card className="mt-3 !p-3">
             {e.loadType === 'cardio'
               ? <div className="text-[14px]"><div className="font-semibold mb-1">Heart-rate zone guide</div><p className="text-mute">Zone 2 is an easy pace where you can talk in short sentences. Intervals: hard means you can’t chat; easy means you recover fully.</p></div>
-              : <><BodyMap primary={e.muscles.primary} secondary={e.muscles.secondary} height={240} info />
+              : <><BodyMap both primary={e.muscles.primary} secondary={e.muscles.secondary} height={230} info />
                 <div className="flex flex-wrap gap-1.5 justify-center mt-2">{e.muscles.primary.map((m) => <Chip key={m} tone="accent">{MUSCLE_INFO[m].name}</Chip>)}{e.muscles.secondary.map((m) => <Chip key={m}>{MUSCLE_INFO[m].name}</Chip>)}</div></>}
           </Card>
           {([['How to', e.howTo, true], ['Cues', e.cues, false], ['Common mistakes', e.mistakes, false]] as const).map(([t, l, num]) => (

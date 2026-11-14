@@ -14,6 +14,17 @@ export function loadManifest(): Promise<Manifest> {
   return pending
 }
 
+/** Small still for lists: our own clip's poster, then the old fallback photo, else a placeholder. */
+export function ExerciseThumb({ ex, person }: { ex: Exercise; person: Person }) {
+  const [m, setM] = useState<Manifest | null>(manifest)
+  const [bad, setBad] = useState(false)
+  useEffect(() => { let live = true; loadManifest().then((x) => { if (live) setM(x) }); return () => { live = false } }, [])
+  const e = m?.[ex.id]
+  const src = (e ? (person === 'varsha' ? e.female ?? e.male : e.male ?? e.female)?.poster : undefined) ?? (m ? ex.media.fallback?.[0] : undefined)
+  if (!src || bad) return m ? <span className="text-[10px] text-mute text-center leading-tight">Demo<br />soon</span> : null
+  return <img src={src} alt="" loading="lazy" onError={() => setBad(true)} className="w-full h-full object-cover" />
+}
+
 const tempoSeconds = (t: string) => { const n = t.split('-').map(Number).filter((x) => !Number.isNaN(x)); return n.length ? Math.max(2.4, n.reduce((a, b) => a + b, 0) + 0.8) : 4 }
 
 /** Priority: Higgsfield video → Higgsfield still → fallback crossfade → body map. */
