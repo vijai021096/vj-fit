@@ -10,6 +10,7 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 export const SHARED_HOUSEHOLD = '00000000-0000-4000-8000-000000000001'
 
 import { PUSH_SCHEMA, PushError } from './push.js'
+import { BACKUP_SCHEMA } from './backups.js'
 
 export const SCHEMA = `
 create table if not exists households (
@@ -46,7 +47,8 @@ create table if not exists records (
 );
 create index if not exists records_household_seq on records (household_id, seq);
 create index if not exists devices_household on devices (household_id);
-${PUSH_SCHEMA}`
+${PUSH_SCHEMA}
+${BACKUP_SCHEMA}`
 
 export const KINDS = new Set(['session', 'weight', 'measure', 'day', 'profile', 'settings', 'badges', 'grocery', 'content', 'avatar'])
 const MAX_BODY = 4 * 1024 * 1024
@@ -108,6 +110,7 @@ export function createApp(db, opts = {}) {
   const openLimit = limiter(opts.openLimit ?? 20, 10 * 60 * 1000)
   const log = opts.log ?? ((...a) => console.log(...a))
   const push = opts.push ?? null
+  const backups = opts.backups ?? null
   const viaPush = (fn) => fn().catch((e) => { throw e instanceof PushError ? new HttpError(e.status, e.message) : e })
 
   async function auth(req) {
@@ -303,6 +306,13 @@ export function createApp(db, opts = {}) {
       if (m === 'PUT' && p === '/api/push/subscription') return [200, await viaPush(async () => push.save(a.deviceId, await readJson(req)))]
       if (m === 'DELETE' && p === '/api/push/subscription') return [200, await push.remove(a.deviceId)]
       if (m === 'POST' && p === '/api/push/test') return [200, await viaPush(() => push.test(a.deviceId))]
+    }
+    if (p.startsWith('/api/backups')) {
+      if (!backups) throw new HttpError(404, 'Backups are not enabled on this server')
+      const a = await auth(req)
+      if (m === 'GET' && p === '/api/backups') return [200, await backups.list(a.householdId)]
+      const bm = /^\/api\/backups\/(\d{4}-\d{2}-\d{2})$/.exec(p)
+      if (m === 'GET' && bm) { const b = await backups.get(a.householdId, bm[1]); if (!b) throw new HttpError(404, 'No backup for that day'); return [200, b] }
     }
     const dm = /^\/api\/devices\/([0-9a-f-]{36})$/.exec(p)
     if (m === 'DELETE' && dm) return [200, await unlink(req, dm[1])]

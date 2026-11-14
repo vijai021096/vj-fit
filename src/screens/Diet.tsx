@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, GlassWater, Pill, Plus, Repeat, Send, ShoppingBasket, Trash2 } from 'lucide-react'
+import type { MealOption } from '../data/meals.types'
 import { useStore, usePerson } from '../store'
 import { NAME, PEOPLE, WD_LABEL, WEEKDAYS } from '../types'
 import { patchDay, type Extra } from '../db'
@@ -39,23 +40,23 @@ export function Diet() {
   const nextSlot = isToday ? menu.plan.slots.map((s) => ({ id: s.id, at: menu.times[s.id] ?? 0 })).filter((x) => !day.eaten[x.id] && x.at >= mins - 45).sort((a, b) => a.at - b.at)[0]?.id : null
   const glasses = Math.round(waterTarget(person, profile) / GLASS)
 
-  const doSwap = (slotId: string) => {
-    const slot = menu.plan.slots.find((s) => s.id === slotId)!
-    const cur = menu.chosen.find((c) => c.slot === slotId)!.option
-    const { strict, loose } = swapOptions(slot, cur.id, profile.veg)
-    const scoopsElsewhere = menu.chosen.filter((c) => c.slot !== slotId).reduce((n, c) => n + (c.option.whey ?? 0), 0)
-    const cands = [...strict, ...loose].filter((o) => scoopsElsewhere + (o.whey ?? 0) <= WHEY_CAP)
-    if (!cands.length) { say('No other option for this meal'); return }
-    // cycle: keep order stable by walking the slot's option list
-    const order = slot.options.filter((o) => cands.some((c) => c.id === o.id))
-    const strictIds = new Set(strict.map((o) => o.id))
-    const pool = order.some((o) => strictIds.has(o.id)) ? order.filter((o) => strictIds.has(o.id)) : order
-    const idx = slot.options.findIndex((o) => o.id === cur.id)
-    const nextO = pool.find((o) => slot.options.indexOf(o) > idx) ?? pool[0]
-    if (isToday) void patchDay(person, pos.date, (x) => { x.swaps[slotId] = nextO.id })
-    else setPreview({ ...preview, [slotId]: nextO.id })
-    if (!strictIds.has(nextO.id)) say('Closest match — outside ±15% kcal / ±5 g protein')
+  const [swapSlot, setSwapSlot] = useState<string | null>(null)
+  const [photoOpt, setPhotoOpt] = useState<MealOption | null>(null)
+  const applySwap = (slotId: string, optId: string) => {
+    if (isToday) void patchDay(person, pos.date, (x) => { x.swaps[slotId] = optId })
+    else setPreview({ ...preview, [slotId]: optId })
+    setSwapSlot(null)
   }
+  const swapView = (() => {
+    if (!swapSlot) return null
+    const slot = menu.plan.slots.find((s) => s.id === swapSlot)
+    const cur = menu.chosen.find((c) => c.slot === swapSlot)?.option
+    if (!slot || !cur) return null
+    const { strict, loose } = swapOptions(slot, cur.id, profile.veg)
+    const scoopsElsewhere = menu.chosen.filter((c) => c.slot !== swapSlot).reduce((n, c) => n + (c.option.whey ?? 0), 0)
+    const okWhey = (o: MealOption) => scoopsElsewhere + (o.whey ?? 0) <= WHEY_CAP
+    return { slot, cur, strict: strict.filter(okWhey), loose: loose.filter(okWhey) }
+  })()
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show">
@@ -101,6 +102,7 @@ export function Diet() {
                   {s.id === nextSlot && <Chip tone="accent" className="!py-0.5 ml-auto">Next · {Math.max(0, Math.round((menu.times[s.id] ?? 0) - mins)) < 60 ? `${Math.max(0, Math.round((menu.times[s.id] ?? 0) - mins))} min` : `${Math.floor(((menu.times[s.id] ?? 0) - mins) / 60)} h ${Math.round((menu.times[s.id] ?? 0) - mins) % 60} min`}</Chip>}
                 </div>
                 <div className="flex items-start gap-3 mt-1.5">
+                  <MealThumb opt={c.option} onOpen={() => setPhotoOpt(c.option)} />
                   <div className="flex-1 min-w-0">
                     <div className={cx('text-[15px] font-medium', eaten && 'line-through')}>{mealName(c.option, menu.scaled.qty[s.id])}</div>
                     <div className="text-[13px] text-mute num mt-0.5">≈ {menu.scaled.kcal[s.id]} kcal · ≈ {menu.scaled.protein[s.id]} g protein{c.option.tag ? ` · ${c.option.tag === 'S' ? 'South' : 'North'}` : ''}</div>
@@ -109,7 +111,7 @@ export function Diet() {
                   <div className="flex flex-col gap-1.5 shrink-0">
                     {isToday && <motion.button whileTap={{ scale: 0.86 }} type="button" aria-pressed={eaten} aria-label={eaten ? `${s.label} eaten — tap to undo` : `Mark ${s.label} as eaten`} onClick={() => void patchDay(person, pos.date, (x) => { x.eaten[s.id] = !x.eaten[s.id] })}
                       className={cx('w-12 h-12 rounded-2xl grid place-items-center border', eaten ? 'accent-grad border-transparent text-[#08080c]' : 'border-line bg-s2')}><Check size={20} strokeWidth={3} /></motion.button>}
-                    {s.options.length > 1 && <button type="button" aria-label={`Swap ${s.label}`} onClick={() => doSwap(s.id)} className="w-12 h-12 rounded-2xl grid place-items-center border border-line bg-s2"><Repeat size={18} /></button>}
+                    {s.options.length > 1 && <button type="button" aria-label={`Swap ${s.label}`} onClick={() => setSwapSlot(s.id)} className="w-12 h-12 rounded-2xl grid place-items-center border border-line bg-s2"><Repeat size={18} /></button>}
                   </div>
                 </div>
               </motion.div>)
@@ -126,6 +128,16 @@ export function Diet() {
               </div>))}
             <Btn kind="soft" className="w-full mt-2" onClick={() => setAddOpen(true)}><Plus size={18} /> I ate something else</Btn>
           </Card></Section>}
+        <Sheet open={!!swapView} onClose={() => setSwapSlot(null)} title={swapView ? `Swap ${swapView.slot.label.toLowerCase()}` : 'Swap'}>
+          {swapView && <SwapList cur={swapView.cur} strict={swapView.strict} loose={swapView.loose} onPick={(id) => applySwap(swapView.slot.id, id)} />}
+        </Sheet>
+        <Sheet open={!!photoOpt} onClose={() => setPhotoOpt(null)} title={photoOpt ? mealName(photoOpt) : ''}>
+          {photoOpt && <div>
+            <img src={`/media/food/${photoOpt.id}.webp`} alt={mealName(photoOpt)} className="w-full rounded-2xl aspect-video object-cover bg-s2" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
+            <div className="text-[14px] text-mute num mt-3">≈ {photoOpt.kcal} kcal · ≈ {photoOpt.protein} g protein at the base portion</div>
+            <p className="text-[12px] text-mute mt-1">Photo is a guide to the portion. Your plate is scaled to your target, so the amounts shown on the meal card are the ones to follow.</p>
+          </div>}
+        </Sheet>
         <AddExtra open={addOpen} onClose={() => setAddOpen(false)} onAdd={(e) => { void patchDay(person, pos.date, (x) => { x.extras = [...(x.extras ?? []), e] }); say(`Added ${e.label}`) }} />
 
         {isToday && <Section title="Water" right={<span className="text-[13px] text-mute num">{(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} / ~{waterTarget(person, profile)} L</span>}>
@@ -214,4 +226,49 @@ function AddExtra({ open, onClose, onAdd }: { open: boolean; onClose: () => void
       <Btn className="w-full mt-5" onClick={() => { onAdd({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, label: label.trim() || 'Something else', kcal, protein }); setLabel(''); onClose() }}>Add to today</Btn>
     </Sheet>
   )
+}
+
+
+function MealThumb({ opt, onOpen }: { opt: MealOption; onOpen: () => void }) {
+  const [ok, setOk] = useState(true)
+  if (!ok) return null
+  return (
+    <button type="button" aria-label={`Show photo of ${mealName(opt)}`} onClick={onOpen} className="shrink-0 w-16 h-16 rounded-2xl overflow-hidden bg-s2 border border-line/60">
+      <img src={`/media/food/${opt.id}.webp`} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" onError={() => setOk(false)} />
+    </button>
+  )
+}
+
+const signed = (n: number, unit: string) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(Math.round(n * 10) / 10)}${unit}`
+
+function SwapList({ cur, strict, loose, onPick }: { cur: MealOption; strict: MealOption[]; loose: MealOption[]; onPick: (id: string) => void }) {
+  const row = (o: MealOption) => {
+    const dk = o.kcal - cur.kcal, dp = o.protein - cur.protein
+    return (
+      <button key={o.id} type="button" onClick={() => onPick(o.id)} className="w-full flex items-center gap-3 min-h-[64px] py-2 text-left border-b border-line/40 last:border-0">
+        <MealThumbStatic id={o.id} />
+        <span className="flex-1 min-w-0">
+          <span className="block text-[15px] font-medium leading-snug">{mealName(o)}</span>
+          <span className="block text-[12px] text-mute num mt-0.5">≈ {o.kcal} kcal · {o.protein} g protein</span>
+        </span>
+        <span className="text-right text-[12px] num shrink-0">
+          <span className={cx('block', Math.abs(dk) <= 0.15 * cur.kcal ? 'text-ok' : 'text-warn')}>{signed(dk, ' kcal')}</span>
+          <span className={cx('block', dp >= -5 ? 'text-ok' : 'text-warn')}>{signed(dp, ' g')}</span>
+        </span>
+      </button>)
+  }
+  return (
+    <div>
+      <p className="text-[14px] text-mute mb-2">Now: <span className="text-ink">{mealName(cur)}</span>. Differences are against this meal.</p>
+      {strict.length > 0 && <><div className="text-[12px] uppercase tracking-widest font-semibold text-mute mt-2">Close match</div>{strict.map(row)}</>}
+      {loose.length > 0 && <><div className="text-[12px] uppercase tracking-widest font-semibold text-mute mt-4">Different calories or protein</div>{loose.map(row)}</>}
+      {!strict.length && !loose.length && <p className="text-[14px] text-mute">No other option for this meal.</p>}
+    </div>
+  )
+}
+
+function MealThumbStatic({ id }: { id: string }) {
+  const [ok, setOk] = useState(true)
+  if (!ok) return <span className="shrink-0 w-14 h-14 rounded-xl bg-s2 grid place-items-center text-mute"><Repeat size={16} /></span>
+  return <img src={`/media/food/${id}.webp`} alt="" loading="lazy" decoding="async" className="shrink-0 w-14 h-14 rounded-xl object-cover bg-s2" onError={() => setOk(false)} />
 }

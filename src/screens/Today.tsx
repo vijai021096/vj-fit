@@ -123,6 +123,8 @@ export function Today() {
 
       {needsReview && <motion.div variants={item}><Card className="mt-4 border-a1/50" onClick={() => open({ type: 'review' })}><div className="flex items-center gap-3"><Sparkles className="accent-text" /><div className="flex-1"><div className="font-semibold">12 weeks done — your Program Review is ready</div><div className="text-[13px] text-mute">See your trends, then start Cycle {pos.cycle}.</div></div><ArrowRight size={18} /></div></Card></motion.div>}
 
+      {pos.phase === 'program' && pos.weekday === 'sun' && <motion.div variants={item}><Card className="mt-4 border-a1/50" onClick={() => open({ type: 'insights' })} data-testid="week-review"><div className="flex items-center gap-3"><Sparkles className="accent-text" /><div className="flex-1"><div className="font-semibold">Your week in review</div><div className="text-[13px] text-mute">How the week went and the one thing to change next week.</div></div><ArrowRight size={18} className="text-mute" /></div></Card></motion.div>}
+
       {nextAction && <motion.div variants={item}><Card className="mt-4 border-a1/50" data-testid="next-action">
         <div className="text-[12px] uppercase tracking-widest accent-text font-semibold">Do next</div>
         <div className="flex items-center gap-3 mt-1"><div className="flex-1 min-w-0"><div className="display text-[20px] font-semibold">{nextAction.title}</div><div className="text-[13px] text-mute">{nextAction.sub}</div></div><Btn onClick={nextAction.go}>{nextAction.cta}</Btn></div>
@@ -247,8 +249,16 @@ function Together() {
   const avatars = useStore((s) => s.avatars)
   const { setPerson, open } = useStore.getState()
   const todays = useLive(() => db.sessions.where('date').equals(pos.date).toArray(), [pos.date], [])
+  const weekStart = addDays(pos.date, -WEEKDAYS.indexOf(pos.weekday))
+  const weekSessions = useLive(() => db.sessions.where('date').between(weekStart, pos.date, true, true).toArray(), [weekStart, pos.date], [])
+  const bothDays = (() => {
+    const by: Record<string, Set<string>> = {}
+    for (const x of weekSessions) if (x.finishedAt) (by[x.date] ??= new Set()).add(x.person)
+    return Object.values(by).filter((set) => set.size >= PEOPLE.length).length
+  })()
   return (
     <div>
+      {bothDays > 0 && <div className="mb-2" data-testid="both-trained"><Chip tone="ok"><Dumbbell size={13} /> Both trained {bothDays === 1 ? 'together on 1 day' : `on ${bothDays} days`} this week</Chip></div>}
       <div className="grid grid-cols-2 gap-2">
         {PEOPLE.map((p) => {
           const pl = profiles[p].onboarded ? todayPlan(p, pos, profiles[p]) : null

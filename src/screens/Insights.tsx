@@ -11,6 +11,9 @@ import { targets, stepsTarget } from '../engine/nutrition'
 import { balanceTone, dayStats, narrate, rangeDates, summarize, type DayStat, type Summary } from '../lib/insights'
 import { Card, Section, Segmented, Skeletons, cx } from '../components/ui'
 import type { SessionLog } from '../types'
+import { exName } from '../data/exercises'
+import { deloadAdvice, stalledLifts } from '../lib/plateau'
+import { weeklyReview } from '../lib/weekly'
 
 type Range = '7' | '30' | '90'
 const tip = { background: 'rgb(var(--s2))', border: '1px solid rgb(var(--line))', borderRadius: 12, fontSize: 12 }
@@ -56,6 +59,12 @@ export function Insights() {
   const other = PEOPLE.find((p) => p !== who)!
   const b = useStats(other, n)
   const profile = s.profiles[who]
+  const w7 = useStats(who, 7)
+  const pdata = usePersonData(who)
+  const todayStr = usePosition().date
+  const stalled = useMemo(() => (pdata.sessions ? stalledLifts(pdata.sessions, todayStr) : []), [pdata.sessions, todayStr])
+  const review = useMemo(() => (w7 && pdata.weights ? weeklyReview(who, w7.stats, w7.sum, w7.target, pdata.weights, stalled) : null), [w7, pdata.weights, stalled, who])
+  const advice = useMemo(() => deloadAdvice(stalled), [stalled])
   const notes = useMemo(() => (a ? narrate(who, a.stats, a.sum, a.target, stepsTarget(who, profile)) : []), [a, who, profile])
   const chart = useMemo(() => (a?.stats ?? []).map((d: DayStat) => ({ date: d.date, eaten: d.eaten || null, burn: d.logged ? d.burn : null, workout: d.workoutBurn + d.stepBurn })), [a])
   const weekly = useMemo(() => {
@@ -82,6 +91,20 @@ export function Insights() {
           {!a ? <Skeletons n={4} /> : (
             <>
               {a.sum.daysLogged === 0 && <Card className="mt-2"><p className="text-[14px] text-mute">Nothing logged in the last {n} days for {NAME[who]} yet. Tick meals, add water and steps, and finish a workout — this fills in by itself.</p></Card>}
+              {review && w7 && w7.sum.daysLogged > 0 && <Card className="mt-2 border-a1/40" data-testid="week-card">
+                <div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Your week · last 7 days</div>
+                <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                  <div><div className="display text-[24px] font-semibold num">{review.workouts}<span className="text-mute text-[15px]"> / {review.planned}</span></div><div className="text-[12px] text-mute">workouts</div></div>
+                  <div><div className="display text-[24px] font-semibold num">{review.proteinDays}<span className="text-mute text-[15px]"> / {review.eatDays || 0}</span></div><div className="text-[12px] text-mute">protein days</div></div>
+                  <div><div className="display text-[24px] font-semibold num">{review.weightDelta == null ? '—' : `${review.weightDelta > 0 ? '+' : ''}${review.weightDelta}`}</div><div className="text-[12px] text-mute">kg this week</div></div>
+                </div>
+                <div className="mt-3 rounded-2xl bg-s2 p-3"><div className="text-[12px] uppercase tracking-widest accent-text font-semibold">Next week, one thing</div><p className="text-[14px] mt-1">{review.focus}</p></div>
+              </Card>}
+              {stalled.length > 0 && <Card className="mt-3" data-testid="stalled">
+                <div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Lifts that have stalled</div>
+                <ul className="mt-2 space-y-1.5">{stalled.slice(0, 6).map((x) => <li key={x.ex} className="flex items-baseline justify-between gap-3 text-[14px]"><span className="min-w-0 truncate">{exName(x.ex)}</span><span className="text-mute num text-[12px] shrink-0">best {x.w ? `${x.w} kg × ` : ''}{x.reps}, {Math.round(x.daysSinceBest / 7)} wk ago</span></li>)}</ul>
+                <p className="text-[13px] text-mute mt-2.5">{advice.text}</p>
+              </Card>}
               {notes.length > 0 && <Card className="mt-2" data-testid="summary">
                 <div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Last {n} days, in plain words</div>
                 <ul className="mt-2 space-y-2">{notes.map((x) => <li key={x.text} className="flex gap-2 text-[14px]"><span aria-hidden className={cx('mt-[7px] w-2 h-2 rounded-full shrink-0', x.tone === 'good' ? 'bg-ok' : x.tone === 'warn' ? 'bg-warn' : 'bg-mute')} /><span><span className="sr-only">{x.tone === 'good' ? 'Good: ' : x.tone === 'warn' ? 'Needs attention: ' : ''}</span>{x.text}</span></li>)}</ul>

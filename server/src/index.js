@@ -3,6 +3,7 @@ import { createApp, DEFAULT_ORIGINS, parseOrigins } from './app.js'
 import { pgDb } from './db.js'
 import * as webpush from 'web-push'
 import { createPush } from './push.js'
+import { createBackups } from './backups.js'
 
 const url = process.env.DATABASE_URL
 if (!url) { console.error('DATABASE_URL is not set'); process.exit(1) }
@@ -11,7 +12,8 @@ const extra = parseOrigins(process.env.CORS_ORIGINS)
 const sharedKey = process.env.SHARED_KEY ?? ''
 if (sharedKey && sharedKey.length < 24) { console.error('SHARED_KEY must be at least 24 characters'); process.exit(1) }
 const push = createPush(db, webpush)
-const app = createApp(db, { origins: [...DEFAULT_ORIGINS, ...extra], sharedKey, push })
+const backups = createBackups(db)
+const app = createApp(db, { origins: [...DEFAULT_ORIGINS, ...extra], sharedKey, push, backups })
 
 let tries = 0
 async function migrate() {
@@ -22,6 +24,7 @@ async function migrate() {
 }
 await migrate()
 push.start()
+backups.start()
 const port = Number(process.env.PORT) || 8787
 const server = http.createServer(app)
 server.keepAliveTimeout = 65000
