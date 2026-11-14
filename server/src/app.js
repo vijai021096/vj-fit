@@ -209,7 +209,8 @@ export function createApp(db, opts = {}) {
     if (!rows[0]) throw new HttpError(404, 'No such device')
     // last device out: remove the household and its data entirely
     const left = await db.query('select count(*)::int as n from devices where household_id = $1', [a.householdId])
-    if (left.rows[0].n === 0) await db.query('delete from households where id = $1', [a.householdId])
+    // In shared mode the household is permanent: the data must outlive any one phone.
+    if (left.rows[0].n === 0 && !sharedKey) await db.query('delete from households where id = $1', [a.householdId])
     return { ok: true, householdDeleted: left.rows[0].n === 0 }
   }
 

@@ -86,3 +86,15 @@ test('shared mode: the key attempt limiter stops guessing', async () => {
     assert.deepEqual(codes, [403, 403, 403, 429, 429])
   } finally { await s.close() }
 })
+
+test('shared mode: removing the last device never deletes the shared data', async () => {
+  const s = await startServer({ sharedKey: KEY, openLimit: 1000 })
+  try {
+    const a = (await open(s, 'A')).body
+    await s.call('POST', '/api/sync', { token: a.token, body: { cursor: 0, changes: [{ kind: 'weight', id: 'vikas|d', data: { kg: 70 }, updatedAt: 5, deleted: false }] } })
+    assert.equal((await s.call('DELETE', '/api/devices/' + a.deviceId, { token: a.token })).status, 200)
+    const b = (await open(s, 'B')).body
+    const pull = await s.call('POST', '/api/sync', { token: b.token, body: { cursor: 0, changes: [] } })
+    assert.deepEqual(pull.body.changes.map((c) => c.id), ['vikas|d'])
+  } finally { await s.close() }
+})
