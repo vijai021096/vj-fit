@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Person, Profile, SetLog } from './types'
+import type { Person, Profile, ProgramDef, SetLog } from './types'
+import type { MealPlan } from './data/meals.types'
 import { DEFAULT_START } from './engine/calendar'
 
 export type Tab = 'today' | 'plan' | 'diet' | 'progress' | 'library'
@@ -12,6 +13,7 @@ export type Overlay =
   | { type: 'review' }
   | { type: 'install' }
   | { type: 'profile'; person: Person }
+  | { type: 'editor'; tab: 'workout' | 'diet' }
 
 export interface Active {
   id: string; date: string; key: string; title: string; weekday: string
@@ -39,6 +41,11 @@ interface State {
   flags: { disclaimer: boolean; install: boolean; rir: boolean; backupNudge: number; lastBackup: number; reviewDone: Record<Person, number>; phase: 'bulk' | 'cut' }
   badges: Record<Person, Record<string, string>>
   grocery: Record<string, boolean>
+  /** Your edits to the coach's plan. Absent = use the coach's version. */
+  content: { programs: Partial<Record<Person, ProgramDef>>; meals: Partial<Record<Person, MealPlan>> }
+  contentRev: number
+  /** Edit time per content record, e.g. `program:vikas` — drives sync. */
+  contentAt: Record<string, number>
   active: Record<Person, Active | null>
   tab: Tab
   overlay: Overlay
@@ -61,6 +68,9 @@ export const useStore = create<State>()(
       flags: { disclaimer: false, install: false, rir: false, backupNudge: 0, lastBackup: 0, reviewDone: { vikas: 1, varsha: 1 }, phase: 'bulk' },
       badges: { vikas: {}, varsha: {} },
       grocery: {},
+      content: { programs: {}, meals: {} },
+      contentRev: 0,
+      contentAt: {},
       active: { vikas: null, varsha: null },
       tab: 'today',
       overlay: null,
@@ -88,8 +98,9 @@ export const useStore = create<State>()(
     {
       name: 'v2fit-store',
       version: 1,
-      partialize: (s) => ({ person: s.person, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, active: s.active, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
+      partialize: (s) => ({ person: s.person, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, content: s.content, contentAt: s.contentAt, active: s.active, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
       migrate: (persisted) => persisted as State,
+      merge: (persisted, current) => ({ ...current, ...(persisted as object), content: { programs: {}, meals: {}, ...((persisted as Partial<State>)?.content ?? {}) }, contentAt: (persisted as Partial<State>)?.contentAt ?? {} }),
     },
   ),
 )

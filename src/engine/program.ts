@@ -4,7 +4,10 @@ import { vikasProgram } from '../data/program.vikas'
 import { varshaProgram } from '../data/program.varsha'
 import { EX } from '../data/exercises'
 
-export const PROGRAMS: Record<Person, ProgramDef> = { vikas: vikasProgram, varsha: varshaProgram }
+/** The coach's plan, never mutated. */
+export const DEFAULT_PROGRAMS: Record<Person, ProgramDef> = { vikas: vikasProgram, varsha: varshaProgram }
+/** The plan in use — the coach's plan, or your edited copy (see lib/content.ts). */
+export const PROGRAMS: Record<Person, ProgramDef> = { ...DEFAULT_PROGRAMS }
 
 export function weekMod(month: number, weekInMonth: number): WeekMod {
   if (weekInMonth === 1) return month === 1 ? WEEK_MODS.Learn : WEEK_MODS.Reset

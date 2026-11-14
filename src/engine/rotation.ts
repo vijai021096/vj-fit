@@ -3,7 +3,9 @@ import type { MealOption, MealPlan, SlotDef, SlotId } from '../data/meals.types'
 import { vikasMeals } from '../data/meals.vikas'
 import { varshaMeals } from '../data/meals.varsha'
 
-export const PLANS: Record<Person, MealPlan> = { vikas: vikasMeals, varsha: varshaMeals }
+export const DEFAULT_PLANS: Record<Person, MealPlan> = { vikas: vikasMeals, varsha: varshaMeals }
+/** The meal plan in use — the coach's, or your edited copy (see lib/content.ts). */
+export const PLANS: Record<Person, MealPlan> = { ...DEFAULT_PLANS }
 export const WEEK_THEMES = ['Classic', 'South Indian', 'North Indian', 'Mix'] as const
 export const WHEY_CAP = 2
 
@@ -36,6 +38,7 @@ export function slotSequence(person: Person, slot: SlotDef, veg = false): string
 }
 
 const cache = new Map<string, Record<string, string[]>>()
+export const clearRotationCache = () => cache.clear()
 function sequences(person: Person, veg: boolean, plan: MealPlan = PLANS[person]) {
   const key = `${person}|${veg}|${plan === PLANS[person] ? 'std' : 'custom'}`
   if (plan !== PLANS[person]) return Object.fromEntries(plan.slots.map((s) => [s.id, slotSequence(person, s, veg)]))

@@ -11,12 +11,16 @@ export interface DayRow {
   water: number; steps: number; creatine?: boolean; updatedAt: number
 }
 
+/** Per-record sync bookkeeping: what we last saw, when it changed, and whether the server has it. */
+export interface SyncMeta { key: string; kind: string; id: string; hash: string; at: number; dirty: 0 | 1; deleted: boolean }
+
 class V2DB extends Dexie {
   sessions!: Table<SessionLog, string>
   weights!: Table<WeightRow, string>
   measures!: Table<MeasureRow, string>
   photos!: Table<PhotoRow, string>
   days!: Table<DayRow, string>
+  syncmeta!: Table<SyncMeta, string>
   constructor() {
     super('v2fit')
     this.version(1).stores({ sessions: 'id, person, date', weights: 'id, person, date', measures: 'id, person, date', photos: 'id, person, date', days: 'id, person, date' })
@@ -25,6 +29,7 @@ class V2DB extends Dexie {
       .upgrade(async (tx) => {
         for (const t of ['sessions', 'weights', 'measures', 'days']) await tx.table(t).toCollection().modify((r: { updatedAt?: number }) => { if (!r.updatedAt) r.updatedAt = Date.now() })
       })
+    this.version(3).stores({ syncmeta: 'key, dirty' })
   }
 }
 export const db = new V2DB()

@@ -8,12 +8,14 @@ import { Skeletons, cx, spring } from './components/ui'
 import { Onboarding, ProfileForm, InstallGuide } from './screens/Onboarding'
 import { Today } from './screens/Today'
 import { maybeAdjust } from './lib/adjust'
+import { useSync } from './lib/sync'
 const Plan = lazy(() => import('./screens/Plan').then((m) => ({ default: m.Plan })))
 const Diet = lazy(() => import('./screens/Diet').then((m) => ({ default: m.Diet })))
 const Progress = lazy(() => import('./screens/Progress').then((m) => ({ default: m.Progress })))
 const Library = lazy(() => import('./screens/Library').then((m) => ({ default: m.Library })))
 const ExerciseDetail = lazy(() => import('./screens/Library').then((m) => ({ default: m.ExerciseDetail })))
 const Settings = lazy(() => import('./screens/Settings').then((m) => ({ default: m.Settings })))
+const Editor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.Editor })))
 const Review = lazy(() => import('./screens/Review').then((m) => ({ default: m.Review })))
 const SessionScreen = lazy(() => import('./screens/Session').then((m) => ({ default: m.SessionScreen })))
 
@@ -28,6 +30,8 @@ export default function App() {
   const theme = useStore((s) => s.settings.theme)
   const flags = useStore((s) => s.flags)
   const tab = useStore((s) => s.tab)
+  const contentRev = useStore((s) => s.contentRev)
+  const sync = useSync()
   const overlay = useStore((s) => s.overlay)
   const toast = useStore((s) => s.toast)
   const { setTab, open, setPerson } = useStore.getState()
@@ -48,7 +52,7 @@ export default function App() {
   useEffect(() => { void navigator.storage?.persist?.().catch(() => false) }, [])
   useEffect(() => { document.getElementById('main')?.scrollTo(0, 0) }, [tab, person])
 
-  const full = !!overlay && ['session', 'exercise', 'settings', 'review'].includes(overlay.type)
+  const full = !!overlay && ['session', 'exercise', 'settings', 'review', 'editor'].includes(overlay.type)
   const ready = flags.disclaimer && person && profiles[person].onboarded
   const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
 
@@ -72,13 +76,13 @@ export default function App() {
                       </button>))}
                   </div>
                 </div>
-                <button type="button" aria-label="Settings" onClick={() => open({ type: 'settings' })} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Cog size={18} /></button>
+                <button type="button" aria-label="Settings" onClick={() => open({ type: 'settings' })} className="relative w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Cog size={18} />{sync.linked && <span data-testid="sync-dot" data-state={sync.state} className={cx('absolute top-2 right-2 w-2.5 h-2.5 rounded-full border border-bg', sync.state === 'idle' ? 'bg-ok' : sync.state === 'syncing' ? 'bg-a1 animate-pulse' : 'bg-warn')} />}</button>
               </div>
             </header>
             <main className="flex-1 overflow-y-auto no-scrollbar" id="main">
               <AnimatePresence mode="wait">
                 <motion.div key={tab + person} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="px-4 pt-4 pb-8">
-                  <Suspense fallback={<Skeletons n={4} />}>
+                  <Suspense fallback={<Skeletons n={4} />} key={contentRev}>
                     {tab === 'today' && <Today />}
                     {tab === 'plan' && <Plan />}
                     {tab === 'diet' && <Diet />}
@@ -103,6 +107,7 @@ export default function App() {
               {overlay?.type === 'session' && <SessionScreen key="session" />}
               {overlay?.type === 'exercise' && <ExerciseDetail key="ex" id={overlay.id} />}
               {overlay?.type === 'settings' && <Settings key="settings" />}
+              {overlay?.type === 'editor' && <Editor key="editor" />}
               {overlay?.type === 'review' && <Review key="review" />}
               {overlay?.type === 'profile' && <ProfileForm key="profile" person={overlay.person} sheet />}
             </Suspense>

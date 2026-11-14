@@ -18,7 +18,7 @@ export function targets(person: Person, p: Profile): Targets {
   const raw = person === 'vikas' ? t + 300 + (p.kcalAdjust || 0) : t - 450 + (p.kcalAdjust || 0)
   const floored = person === 'varsha' && raw < VARSHA_FLOOR
   const kcal = Math.round(floored ? VARSHA_FLOOR : raw)
-  const protein = Math.round(PROTEIN_PER_KG * p.weightKg)
+  const protein = Math.round((p.proteinPerKg || PROTEIN_PER_KG) * p.weightKg)
   const fat = Math.round((kcal * 0.25) / 9)
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4))
   return { bmr: Math.round(bmr(p)), tdee: Math.round(t), kcal, protein, fat, carbs, floored }
@@ -156,3 +156,8 @@ export function mealTimes(slots: SlotId[], gymTime: string, durationMin = 60): P
   slots.forEach((s) => { if (t[s] !== undefined) out[s] = t[s] })
   return out
 }
+
+export const DEFAULT_WATER_L: Record<Person, number> = { vikas: 3.5, varsha: 2.75 }
+export const DEFAULT_STEPS: Record<Person, number> = { vikas: 7500, varsha: 9500 }
+export const waterTarget = (person: Person, p: Profile) => p.waterL || DEFAULT_WATER_L[person]
+export const stepsTarget = (person: Person, p: Profile) => p.stepsTarget || DEFAULT_STEPS[person]

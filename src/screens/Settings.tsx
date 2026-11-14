@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, CalendarPlus, Download, HardDriveDownload, Info, Smartphone, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, Download, HardDriveDownload, Info, Pencil, Smartphone, Trash2, Upload } from 'lucide-react'
 import { useStore, usePerson } from '../store'
 import { NAME } from '../types'
 import { DISCLAIMER } from '../data/common'
@@ -10,6 +10,7 @@ import { downloadBackup, importAll, resetAll } from '../lib/backup'
 import { downloadICS } from '../lib/ics'
 import { fmtDate, programEnd, week1Start, weekdayOf } from '../engine/calendar'
 import { targets } from '../engine/nutrition'
+import { SyncPanel } from './SyncPanel'
 import { Btn, Card, Section, Segmented, Sheet, cx } from '../components/ui'
 
 const Row = ({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) => (
@@ -67,8 +68,11 @@ export function Settings() {
             </Card>
           </Section>
 
+          <SyncPanel />
+
           <Section title="Program">
             <Card>
+              <Btn className="w-full mb-2" onClick={() => s.open({ type: 'editor', tab: 'workout' })}><Pencil size={18} /> Edit workouts and meals</Btn>
               <Row label="Program start date" sub={`Week 1 starts ${fmtDate(week1Start(s.settings.programStart))} · ends ${fmtDate(programEnd(s.settings.programStart), { day: 'numeric', month: 'short', year: 'numeric' })}`}>
                 <input aria-label="Program start date" type="date" value={s.settings.programStart} onChange={(e) => e.target.value && s.set((x) => { x.settings.programStart = e.target.value })} className="bg-s2 rounded-xl px-2 min-h-[44px] text-[14px]" /></Row>
               <Row label="My gym is closed Sunday → start on Monday" sub={sunStart ? 'Day 0 becomes a lighter first session on Week 1 Monday' : 'Only applies when the start date is a Sunday'}><Toggle label="Merge Day 0 into Monday" on={s.settings.mergeDay0} onChange={(v) => s.set((x) => { x.settings.mergeDay0 = v })} /></Row>

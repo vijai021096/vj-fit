@@ -57,5 +57,6 @@ export async function importAll(text: string, mode: 'replace' | 'merge'): Promis
 export async function resetAll() {
   await db.delete()
   localStorage.removeItem('v2fit-store')
+  localStorage.removeItem('v2fit-sync') // this phone leaves sync; re-pair to pull everything back
   location.reload()
 }

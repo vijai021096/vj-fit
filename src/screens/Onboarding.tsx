@@ -4,6 +4,7 @@ import { ArrowRight, Camera, Check, PlusSquare, Share, X } from 'lucide-react'
 import { useStore } from '../store'
 import { NAME, PEOPLE, type Person, type Profile } from '../types'
 import { DISCLAIMER } from '../data/common'
+import { SyncPanel } from './SyncPanel'
 import { Btn, Segmented, Sheet, Stepper, cx, spring } from '../components/ui'
 
 export function Onboarding() {
@@ -28,6 +29,7 @@ export function Onboarding() {
 }
 
 function Picker() {
+  const [join, setJoin] = useState(false)
   const setPerson = useStore((s) => s.setPerson)
   const avatars = useStore((s) => s.avatars)
   return (
@@ -53,6 +55,8 @@ function Picker() {
             <div className="relative mt-6 inline-flex items-center gap-2 text-[14px] font-semibold accent-grad-text">Start as {NAME[p]} <ArrowRight size={16} className="text-ink" /></div>
           </motion.button>))}
       </div>
+      <button type="button" onClick={() => setJoin(true)} className="min-h-[48px] mb-4 text-[14px] font-semibold accent-text">Already set up on another phone? Sync it here</button>
+      <Sheet open={join} onClose={() => setJoin(false)} title="Sync from your other phone"><SyncPanel joinOnly /></Sheet>
     </div>
   )
 }

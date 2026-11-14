@@ -7,12 +7,11 @@ import { patchDay } from '../db'
 import { useNow, usePosition } from '../lib/hooks'
 import { GLASS, dayIndex, useDay, useMenu } from './Today'
 import { WEEK_THEMES, WHEY_CAP, optionById, swapOptions } from '../engine/rotation'
-import { fmtMin, mealName } from '../engine/nutrition'
+import { fmtMin, mealName, waterTarget } from '../engine/nutrition'
 import { groceryList, groceryText } from '../engine/grocery'
 import { istMinutes } from '../engine/calendar'
 import { Bar, Btn, Card, Chip, Section, Segmented, cx, item, stagger } from '../components/ui'
 
-const WATER_L = { vikas: 3.5, varsha: 2.75 }
 
 export function Diet() {
   const person = usePerson()
@@ -35,7 +34,7 @@ export function Diet() {
   const eatenK = isToday ? menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.kcal[c.slot] ?? 0 : 0), 0) : 0
   const eatenP = isToday ? menu.chosen.reduce((n, c) => n + (day.eaten[c.slot] ? menu.scaled.protein[c.slot] ?? 0 : 0), 0) : 0
   const nextSlot = isToday ? menu.plan.slots.map((s) => ({ id: s.id, at: menu.times[s.id] ?? 0 })).filter((x) => !day.eaten[x.id] && x.at >= mins - 45).sort((a, b) => a.at - b.at)[0]?.id : null
-  const glasses = Math.round(WATER_L[person] / GLASS)
+  const glasses = Math.round(waterTarget(person, profile) / GLASS)
 
   const doSwap = (slotId: string) => {
     const slot = menu.plan.slots.find((s) => s.id === slotId)!
@@ -114,7 +113,7 @@ export function Diet() {
           })}
         </div>
 
-        {isToday && <Section title="Water" right={<span className="text-[13px] text-mute num">{(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} / {person === 'vikas' ? '~3.5' : '~2.5–3'} L</span>}>
+        {isToday && <Section title="Water" right={<span className="text-[13px] text-mute num">{(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} / ~{waterTarget(person, profile)} L</span>}>
           <Card><div className="grid grid-cols-7 gap-1.5">{Array.from({ length: glasses }, (_, i) => (
             <button key={i} type="button" aria-label={`Glass ${i + 1} of ${glasses}`} aria-pressed={i < day.water} onClick={() => void patchDay(person, pos.date, (x) => { x.water = x.water === i + 1 ? i : i + 1 })}
               className={cx('h-12 rounded-xl grid place-items-center border', i < day.water ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s2 border-line/60 text-mute')}><GlassWater size={18} /></button>))}</div>

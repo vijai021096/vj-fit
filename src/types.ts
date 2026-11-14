@@ -141,4 +141,8 @@ export interface Profile {
   adjustReason?: string
   squatApproved?: boolean
   onboarded: boolean
+  /** Editable targets (fall back to the coach's defaults when unset) */
+  waterL?: number
+  stepsTarget?: number
+  proteinPerKg?: number
 }
