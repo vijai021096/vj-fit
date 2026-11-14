@@ -5,7 +5,7 @@ import '@fontsource-variable/inter/index.css'
 import './index.css'
 import App from './App'
 import { watchContent } from './lib/content'
-import { startSync } from './lib/sync'
+import { consumeSetupLink, startSync } from './lib/sync'
 import { setSimulatedNow } from './engine/calendar'
 
 const sim = new URLSearchParams(location.search).get('simulate') ?? sessionStorage.getItem('v2fit-simulate')
@@ -37,5 +37,6 @@ class Boundary extends React.Component<{ children: React.ReactNode }, { err: Err
 }
 
 watchContent()
+consumeSetupLink()
 startSync()
 createRoot(document.getElementById('root')!).render(<React.StrictMode><Boundary><App /></Boundary></React.StrictMode>)

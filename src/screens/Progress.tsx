@@ -30,6 +30,7 @@ export function Progress() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={item} className="display text-[30px] font-semibold">Progress</motion.h1>
+      <motion.div variants={item}><button type="button" onClick={() => useStore.getState().open({ type: 'insights' })} className="w-full mt-3 card p-4 flex items-center gap-3 text-left min-h-[64px]"><span className="w-11 h-11 rounded-2xl accent-grad grid place-items-center text-[#08080c]"><LC size={20} /></span><span className="flex-1"><span className="block font-semibold text-[16px]">Insights</span><span className="block text-[13px] text-mute">Calories eaten &amp; burnt, workouts, steps — you and Varsha/Vikas</span></span></button></motion.div>
       <motion.div variants={item}><Headline person={person} weights={weights} measures={measures} /></motion.div>
       <Section title="Weight"><WeightChart person={person} weights={weights} today={pos.date} /></Section>
       <Section title="Measurements"><Measurements person={person} measures={measures} today={pos.date} /></Section>

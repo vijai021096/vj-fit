@@ -16,6 +16,7 @@ const Library = lazy(() => import('./screens/Library').then((m) => ({ default: m
 const ExerciseDetail = lazy(() => import('./screens/Library').then((m) => ({ default: m.ExerciseDetail })))
 const Settings = lazy(() => import('./screens/Settings').then((m) => ({ default: m.Settings })))
 const Editor = lazy(() => import('./screens/Editor').then((m) => ({ default: m.Editor })))
+const Insights = lazy(() => import('./screens/Insights').then((m) => ({ default: m.Insights })))
 const Review = lazy(() => import('./screens/Review').then((m) => ({ default: m.Review })))
 const SessionScreen = lazy(() => import('./screens/Session').then((m) => ({ default: m.SessionScreen })))
 
@@ -52,7 +53,7 @@ export default function App() {
   useEffect(() => { void navigator.storage?.persist?.().catch(() => false) }, [])
   useEffect(() => { document.getElementById('main')?.scrollTo(0, 0) }, [tab, person])
 
-  const full = !!overlay && ['session', 'exercise', 'settings', 'review', 'editor'].includes(overlay.type)
+  const full = !!overlay && ['session', 'exercise', 'settings', 'review', 'editor', 'insights'].includes(overlay.type)
   const ready = flags.disclaimer && person && profiles[person].onboarded
   const standalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
 
@@ -107,6 +108,7 @@ export default function App() {
               {overlay?.type === 'session' && <SessionScreen key="session" />}
               {overlay?.type === 'exercise' && <ExerciseDetail key="ex" id={overlay.id} />}
               {overlay?.type === 'settings' && <Settings key="settings" />}
+              {overlay?.type === 'insights' && <Insights key="insights" />}
               {overlay?.type === 'editor' && <Editor key="editor" />}
               {overlay?.type === 'review' && <Review key="review" />}
               {overlay?.type === 'profile' && <ProfileForm key="profile" person={overlay.person} sheet />}

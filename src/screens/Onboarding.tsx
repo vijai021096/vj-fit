@@ -55,8 +55,8 @@ function Picker() {
             <div className="relative mt-6 inline-flex items-center gap-2 text-[14px] font-semibold accent-grad-text">Start as {NAME[p]} <ArrowRight size={16} className="text-ink" /></div>
           </motion.button>))}
       </div>
-      <button type="button" onClick={() => setJoin(true)} className="min-h-[48px] mb-4 text-[14px] font-semibold accent-text">Already set up on another phone? Sync it here</button>
-      <Sheet open={join} onClose={() => setJoin(false)} title="Sync from your other phone"><SyncPanel joinOnly /></Sheet>
+      <button type="button" onClick={() => setJoin(true)} className="min-h-[48px] mb-4 text-[14px] font-semibold accent-text">Already using V² Fit on another phone? Connect it here</button>
+      <Sheet open={join} onClose={() => setJoin(false)} title="Connect to the shared data"><SyncPanel bare /></Sheet>
     </div>
   )
 }
@@ -93,7 +93,7 @@ export function ProfileForm({ person, sheet }: { person: Person; sheet?: boolean
           <span className="absolute bottom-0 right-0 w-6 h-6 rounded-tl-xl bg-black/60 text-white grid place-items-center"><Camera size={12} /></span>
         </button>
         <input ref={file} type="file" accept="image/*" hidden onChange={(e) => onAvatar(e.target.files?.[0])} />
-        <div><div className="display text-[22px] font-semibold">{NAME[person]}</div><div className="text-[13px] text-mute">Used only to estimate your calories. Stays on this phone.</div></div>
+        <div><div className="display text-[22px] font-semibold">{NAME[person]}</div><div className="text-[13px] text-mute">Used only to estimate your calories. Shared with your other phone.</div></div>
       </div>
       {([['heightCm', 'Height', 'cm', 1, 120, 220], ['weightKg', 'Weight', 'kg', 0.5, 30, 200], ['age', 'Age', 'yrs', 1, 14, 90]] as const).map(([k, label, unit, step, min, max]) => (
         <div key={k} className="flex items-center justify-between rounded-2xl bg-s2 border border-line/60 px-4 py-2">

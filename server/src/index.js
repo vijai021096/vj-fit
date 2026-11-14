@@ -6,7 +6,9 @@ const url = process.env.DATABASE_URL
 if (!url) { console.error('DATABASE_URL is not set'); process.exit(1) }
 const db = pgDb(url)
 const extra = parseOrigins(process.env.CORS_ORIGINS)
-const app = createApp(db, { origins: [...DEFAULT_ORIGINS, ...extra] })
+const sharedKey = process.env.SHARED_KEY ?? ''
+if (sharedKey && sharedKey.length < 24) { console.error('SHARED_KEY must be at least 24 characters'); process.exit(1) }
+const app = createApp(db, { origins: [...DEFAULT_ORIGINS, ...extra], sharedKey })
 
 let tries = 0
 async function migrate() {

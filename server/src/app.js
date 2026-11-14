@@ -4,7 +4,10 @@
 // bearer token (only its SHA-256 is stored). Data are opaque JSON *records* keyed by (kind, id) with a
 // client timestamp `updatedAt`; the newest write wins. Every accepted write gets a fresh server `seq`,
 // so a device pulls "everything after my cursor" without trusting phone clocks for ordering.
-import { createHash, randomBytes, randomUUID } from 'node:crypto'
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
+
+/** The one household Vikas and Varsha share when a SHARED_KEY is configured. */
+export const SHARED_HOUSEHOLD = '00000000-0000-4000-8000-000000000001'
 
 export const SCHEMA = `
 create table if not exists households (
@@ -99,6 +102,8 @@ export function createApp(db, opts = {}) {
   const origins = opts.origins ?? DEFAULT_ORIGINS
   const pairLimit = limiter(opts.pairLimit ?? 10, 10 * 60 * 1000)
   const createLimit = limiter(opts.createLimit ?? 20, 60 * 60 * 1000)
+  const sharedKey = opts.sharedKey ? String(opts.sharedKey) : ''
+  const openLimit = limiter(opts.openLimit ?? 20, 10 * 60 * 1000)
   const log = opts.log ?? ((...a) => console.log(...a))
 
   async function auth(req) {
@@ -124,6 +129,7 @@ export function createApp(db, opts = {}) {
   const label = (s) => String(s ?? 'Phone').replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40) || 'Phone'
 
   async function household(req, body) {
+    if (sharedKey) throw new HttpError(410, 'This app uses one shared database now. Open the setup link instead.')
     if (!createLimit(ip(req))) throw new HttpError(429, 'Too many new households from this network. Try later.')
     const hid = randomUUID(), did = randomUUID(), token = newToken()
     await db.tx(async (q) => {
@@ -133,7 +139,35 @@ export function createApp(db, opts = {}) {
     return { householdId: hid, deviceId: did, token }
   }
 
+  /** Shared-database mode: anyone holding the household key joins the one shared household. */
+  async function open(req, body) {
+    if (!sharedKey) throw new HttpError(404, 'Not found')
+    if (!openLimit(ip(req))) throw new HttpError(429, 'Too many attempts. Wait a few minutes and try again.')
+    const given = createHash('sha256').update(String(body.key ?? '')).digest()
+    const want = createHash('sha256').update(sharedKey).digest()
+    if (!timingSafeEqual(given, want)) throw new HttpError(403, 'That setup link is not valid. Ask for a fresh one.')
+    const did = randomUUID(), token = newToken()
+    await db.tx(async (q) => {
+      await q('insert into households (id, name) values ($1, $2) on conflict do nothing', [SHARED_HOUSEHOLD, 'V² Fit shared'])
+      // Fold anything saved in earlier per-phone households into the shared one (newest write wins), then drop them.
+      await q(
+        `insert into records (household_id, kind, id, data, updated_at, deleted, device_id, seq)
+         select $1, kind, id, data, updated_at, deleted, null, nextval('record_seq')
+         from (select distinct on (kind, id) * from records where household_id <> $1 order by kind, id, updated_at desc) o
+         on conflict (household_id, kind, id) do update
+           set data = excluded.data, updated_at = excluded.updated_at, deleted = excluded.deleted, seq = nextval('record_seq')
+           where records.updated_at < excluded.updated_at`,
+        [SHARED_HOUSEHOLD],
+      )
+      await q('delete from households where id <> $1', [SHARED_HOUSEHOLD])
+      await q('insert into devices (id, household_id, token_hash, label) values ($1, $2, $3, $4)', [did, SHARED_HOUSEHOLD, sha(token), label(body.label)])
+      await q('delete from devices where household_id = $1 and id in (select id from devices where household_id = $1 order by coalesce(last_seen, created_at) desc offset 20)', [SHARED_HOUSEHOLD])
+    })
+    return { householdId: SHARED_HOUSEHOLD, deviceId: did, token }
+  }
+
   async function pairStart(req) {
+    if (sharedKey) throw new HttpError(410, 'Pairing is not used any more.')
     const a = await auth(req)
     const code = newCode()
     await db.query("delete from pair_codes where household_id = $1 and (used_at is not null or expires_at < now())", [a.householdId])
@@ -145,6 +179,7 @@ export function createApp(db, opts = {}) {
   }
 
   async function pairJoin(req, body) {
+    if (sharedKey) throw new HttpError(410, 'Pairing is not used any more.')
     if (!pairLimit(ip(req))) throw new HttpError(429, 'Too many attempts. Wait a few minutes and try again.')
     const code = normCode(body.code)
     if (code.length !== 8) throw new HttpError(400, 'The code has 8 characters.')
@@ -250,6 +285,7 @@ export function createApp(db, opts = {}) {
       try { await db.query('select 1'); dbOk = true } catch { /* reported below */ }
       return [dbOk ? 200 : 503, { ok: dbOk, service: 'v2-fit-sync', db: dbOk }]
     }
+    if (m === 'POST' && p === '/api/open') return [200, await open(req, await readJson(req))]
     if (m === 'POST' && p === '/api/households') return [201, await household(req, await readJson(req))]
     if (m === 'POST' && p === '/api/pair/start') return [200, await pairStart(req)]
     if (m === 'POST' && p === '/api/pair/join') return [200, await pairJoin(req, await readJson(req))]

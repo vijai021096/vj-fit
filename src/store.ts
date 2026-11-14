@@ -14,6 +14,7 @@ export type Overlay =
   | { type: 'install' }
   | { type: 'profile'; person: Person }
   | { type: 'editor'; tab: 'workout' | 'diet' }
+  | { type: 'insights' }
 
 export interface Active {
   id: string; date: string; key: string; title: string; weekday: string

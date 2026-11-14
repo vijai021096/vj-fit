@@ -14,13 +14,25 @@ import { planOk, programOk } from './content'
 
 const CFG_KEY = 'v2fit-sync'
 export interface SyncCfg { api: string; token: string; deviceId: string; householdId: string; cursor: number; label: string }
+const KEY_KEY = 'v2fit-key'
+export const getKey = (): string => { try { return localStorage.getItem(KEY_KEY) ?? '' } catch { return '' } }
+export const setKey = (k: string) => { try { k ? localStorage.setItem(KEY_KEY, k.trim()) : localStorage.removeItem(KEY_KEY) } catch { /* private mode */ } }
+/** A setup link like https://v2-fit.vercel.app/#k=… stores the household key, then is removed from the address bar. */
+export function consumeSetupLink() {
+  try {
+    const m = /[#&?]k=([^&]+)/.exec(location.hash)
+    if (!m) return
+    setKey(decodeURIComponent(m[1]))
+    history.replaceState(null, '', location.pathname + location.search)
+  } catch { /* ignore */ }
+}
 export const DEFAULT_API = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/+$/, '')
 
 export const getCfg = (): SyncCfg | null => { try { const c = JSON.parse(localStorage.getItem(CFG_KEY) ?? 'null'); return c?.token ? c : null } catch { return null } }
 const saveCfg = (c: SyncCfg | null) => { try { c ? localStorage.setItem(CFG_KEY, JSON.stringify(c)) : localStorage.removeItem(CFG_KEY) } catch { /* private mode */ } }
 
 export type SyncState = 'off' | 'idle' | 'syncing' | 'offline' | 'error' | 'unlinked'
-export const useSync = create<{ state: SyncState; last: number; error: string; linked: boolean }>(() => ({ state: getCfg() ? 'idle' : 'off', last: 0, error: '', linked: !!getCfg() }))
+export const useSync = create<{ state: SyncState; last: number; error: string; linked: boolean }>(() => ({ state: getCfg() || getKey() ? 'idle' : 'off', last: 0, error: '', linked: !!(getCfg() || getKey()) }))
 const setSync = (p: Partial<ReturnType<typeof useSync.getState>>) => useSync.setState(p)
 
 /* ------------------------------- helpers ------------------------------- */
@@ -151,11 +163,12 @@ async function applyRemote(changes: Change[]) {
 }
 
 /* ------------------------------- the loop ------------------------------- */
+let reopens = 0
 let running: Promise<void> | null = null
 let again = false
 
 export function syncNow(): Promise<void> {
-  if (!getCfg()) return Promise.resolve()
+  if (!getCfg() && !getKey()) return Promise.resolve()
   if (running) { again = true; return running }
   running = (async () => {
     try { do { again = false; await cycle() } while (again) } finally { running = null }
@@ -164,10 +177,11 @@ export function syncNow(): Promise<void> {
 }
 
 async function cycle() {
-  let cfg: SyncCfg | null = getCfg(); if (!cfg) return
+  let cfg: SyncCfg | null = getCfg(); if (!cfg && !getKey()) return
   if (typeof navigator !== 'undefined' && navigator.onLine === false) { setSync({ state: 'offline' }); return }
   setSync({ state: 'syncing', error: '' })
   try {
+    if (!cfg) cfg = await connect()
     // local DB was wiped (iOS storage eviction / reset) but the server cursor survived → start from scratch
     if (cfg.cursor > 0 && (await db.syncmeta.count()) === 0) { cfg = { ...cfg, cursor: 0 }; saveCfg(cfg) }
     for (let guard = 0; guard < 200; guard++) {
@@ -189,51 +203,48 @@ async function cycle() {
       cfg = { ...cfg, cursor: res.cursor }; saveCfg(cfg)
       if (!res.more && dirty.length < 200) break
     }
+    reopens = 0
     setSync({ state: 'idle', last: Date.now(), error: '' })
   } catch (e) {
     const err = e as Error & { status?: number }
-    if (err.status === 401) { setSync({ state: 'unlinked', error: 'This phone was removed from sync. Pair it again.' }); return }
+    if (err.status === 401 && getKey() && reopens++ < 2) { saveCfg(null); again = true; return } // old token (e.g. spaces were merged): re-open with the key
+    if (err.status === 403) { setKey(''); saveCfg(null); setSync({ state: 'unlinked', linked: false, error: 'That household key is not valid.' }); return }
+    if (err.status === 401) { setSync({ state: 'unlinked', error: 'This phone was removed. Enter the household key again.' }); return }
     const offline = err.name === 'AbortError' || err instanceof TypeError || navigator.onLine === false
     setSync({ state: offline ? 'offline' : 'error', error: offline ? '' : err.message })
   }
 }
 
-/* ------------------------- pairing / account calls ------------------------- */
-const adopt = (api: string, r: { householdId: string; deviceId: string; token: string }, label: string) => {
-  saveCfg({ api, token: r.token, deviceId: r.deviceId, householdId: r.householdId, cursor: 0, label })
+/* ------------------------------ shared database ------------------------------ */
+/** Open the one shared household with the key; everything on this phone is (re)sent so nothing is lost. */
+async function connect(): Promise<SyncCfg> {
+  const api = DEFAULT_API
+  if (!api) throw new Error('No sync server is configured for this build.')
+  const r = await call<{ householdId: string; deviceId: string; token: string }>(api, '/api/open', { method: 'POST', body: JSON.stringify({ key: getKey(), label: 'Phone' }) })
+  const cfg: SyncCfg = { api, token: r.token, deviceId: r.deviceId, householdId: r.householdId, cursor: 0, label: 'Shared database' }
+  await db.syncmeta.clear()
+  saveCfg(cfg)
+  return cfg
+}
+/** Save the key and connect right away so a wrong key is reported immediately. */
+export async function connectWithKey(key: string) {
+  const k = key.trim()
+  if (k.length < 12) throw new Error('That key looks too short.')
+  const prev = getKey()
+  setKey(k); saveCfg(null)
+  try { await connect() } catch (e) { setKey(prev); throw e }
   setSync({ linked: true, state: 'idle', error: '' })
   void syncNow()
 }
-export async function createHousehold(api: string, label: string) {
-  adopt(api, await call(api, '/api/households', { method: 'POST', body: JSON.stringify({ label }) }), label)
-}
-export async function joinWithCode(api: string, code: string, label: string) {
-  adopt(api, await call(api, '/api/pair/join', { method: 'POST', body: JSON.stringify({ code, label }) }), label)
-}
-export async function startPairing() {
-  const c = getCfg(); if (!c) throw new Error('Not linked')
-  return call<{ code: string; expiresAt: string }>(c.api, '/api/pair/start', { method: 'POST', token: c.token, body: '{}' })
-}
-export interface Device { id: string; label: string; createdAt: string; lastSeen: string; me: boolean }
-export async function listDevices() {
-  const c = getCfg(); if (!c) throw new Error('Not linked')
-  return call<{ devices: Device[]; records: number }>(c.api, '/api/me', { token: c.token })
-}
-export async function removeDevice(id: string) {
-  const c = getCfg(); if (!c) return
-  await call(c.api, `/api/devices/${id}`, { method: 'DELETE', token: c.token })
-  if (id === c.deviceId) disconnectLocal()
-}
 /** Stop syncing on this phone. Everything stays on the phone. */
-export function disconnectLocal() { saveCfg(null); setSync({ linked: false, state: 'off', error: '' }) }
-export const formatCode = (c: string) => `${c.slice(0, 4)}-${c.slice(4)}`
+export function disconnectLocal() { saveCfg(null); setKey(''); setSync({ linked: false, state: 'off', error: '' }) }
 
 /* ------------------------------- auto start ------------------------------- */
 let started = false
 export function startSync() {
   if (started) return; started = true
   let timer: ReturnType<typeof setTimeout> | undefined
-  const soon = (ms = 2500) => { if (!getCfg()) return; clearTimeout(timer); timer = setTimeout(() => void syncNow(), ms) }
+  const soon = (ms = 2500) => { if (!getCfg() && !getKey()) return; clearTimeout(timer); timer = setTimeout(() => void syncNow(), ms) }
   useStore.subscribe(() => soon())
   for (const t of ['sessions', 'weights', 'measures', 'days'] as const) {
     db.table(t).hook('creating', () => { soon() }); db.table(t).hook('updating', () => { soon() }); db.table(t).hook('deleting', () => { soon() })

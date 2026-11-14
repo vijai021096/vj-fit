@@ -4,4 +4,4 @@ import { createApp } from '../src/app.js'
 import { memDb } from './helpers.js'
 const port = Number(process.argv[2] ?? 8787)
 const db = await memDb()
-http.createServer(createApp(db, { createLimit: 1000, pairLimit: 1000, accessLog: false })).listen(port, '127.0.0.1', () => console.log('dev server on', port))
+http.createServer(createApp(db, { createLimit: 1000, pairLimit: 1000, openLimit: 1000, accessLog: false, sharedKey: process.env.SHARED_KEY })).listen(port, '127.0.0.1', () => console.log('dev server on', port))

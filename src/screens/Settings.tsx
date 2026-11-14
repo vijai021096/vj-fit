@@ -101,7 +101,7 @@ export function Settings() {
 
           <Section title="Backup">
             <Card>
-              <p className="text-[14px] text-mute">Everything lives on this phone. iOS can clear storage for web apps, so back up weekly.{s.flags.lastBackup ? ` Last backup: ${new Date(s.flags.lastBackup).toLocaleDateString('en-IN')}.` : ''}</p>
+              <p className="text-[14px] text-mute">Your data is also saved in the shared database, so a lost phone doesn’t lose it. Photos stay on the phone that took them, so back those up.{s.flags.lastBackup ? ` Last backup: ${new Date(s.flags.lastBackup).toLocaleDateString('en-IN')}.` : ''}</p>
               <Row label="Include progress photos" sub="Makes the file much larger"><Toggle label="Include photos" on={photos} onChange={setPhotos} /></Row>
               <div className="grid grid-cols-2 gap-2 mt-3">
                 <Btn onClick={() => void downloadBackup(photos)}><Download size={18} /> Export</Btn>
@@ -129,7 +129,7 @@ export function Settings() {
         </div>
       </Sheet>
       <Sheet open={confirm} onClose={() => setConfirm(false)} title="Reset everything?">
-        <p className="text-[14px] text-mute mb-4">This deletes all logs, photos and settings on this phone. It can’t be undone. Export a backup first if you might want them.</p>
+        <p className="text-[14px] text-mute mb-4">This deletes all logs, photos and settings on this phone and disconnects it from the shared database (the shared copy is kept). Export a backup first if you might want your photos.</p>
         <div className="space-y-2"><Btn kind="danger" className="w-full" onClick={() => void resetAll()}>Yes, delete everything</Btn><Btn kind="soft" className="w-full" onClick={() => setConfirm(false)}>Cancel</Btn></div>
       </Sheet>
     </motion.div>
