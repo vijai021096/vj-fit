@@ -1,4 +1,10 @@
 {
+ "ab-wheel-rollout": {
+  "male": {
+   "video": "/media/hf/ab-wheel-rollout.mp4",
+   "poster": "/media/hf/ab-wheel-rollout.jpg"
+  }
+ },
  "arnold-press": {
   "female": {
    "video": "/media/hf/arnold-press.female.mp4",
@@ -27,6 +33,42 @@
   "male": {
    "video": "/media/hf/bb-bench-press.mp4",
    "poster": "/media/hf/bb-bench-press.jpg"
+  }
+ },
+ "bb-romanian-deadlift": {
+  "male": {
+   "video": "/media/hf/bb-romanian-deadlift.mp4",
+   "poster": "/media/hf/bb-romanian-deadlift.jpg"
+  }
+ },
+ "bear-crawl-hold": {
+  "female": {
+   "video": "/media/hf/bear-crawl-hold.female.mp4",
+   "poster": "/media/hf/bear-crawl-hold.female.jpg"
+  }
+ },
+ "bike": {
+  "female": {
+   "video": "/media/hf/bike.female.mp4",
+   "poster": "/media/hf/bike.female.jpg"
+  }
+ },
+ "bird-dog": {
+  "female": {
+   "video": "/media/hf/bird-dog.female.mp4",
+   "poster": "/media/hf/bird-dog.female.jpg"
+  }
+ },
+ "bulgarian-split-squat": {
+  "male": {
+   "video": "/media/hf/bulgarian-split-squat.mp4",
+   "poster": "/media/hf/bulgarian-split-squat.jpg"
+  }
+ },
+ "cable-crunch": {
+  "male": {
+   "video": "/media/hf/cable-crunch.mp4",
+   "poster": "/media/hf/cable-crunch.jpg"
   }
  },
  "cable-curl": {
@@ -71,6 +113,30 @@
    "poster": "/media/hf/db-lateral-raise.jpg"
   }
  },
+ "db-reverse-lunge": {
+  "female": {
+   "video": "/media/hf/db-reverse-lunge.female.mp4",
+   "poster": "/media/hf/db-reverse-lunge.female.jpg"
+  }
+ },
+ "db-romanian-deadlift": {
+  "male": {
+   "video": "/media/hf/db-romanian-deadlift.mp4",
+   "poster": "/media/hf/db-romanian-deadlift.jpg"
+  }
+ },
+ "db-walking-lunge": {
+  "male": {
+   "video": "/media/hf/db-walking-lunge.mp4",
+   "poster": "/media/hf/db-walking-lunge.jpg"
+  }
+ },
+ "dead-bug": {
+  "female": {
+   "video": "/media/hf/dead-bug.female.mp4",
+   "poster": "/media/hf/dead-bug.female.jpg"
+  }
+ },
  "ez-bar-curl": {
   "male": {
    "video": "/media/hf/ez-bar-curl.mp4",
@@ -101,10 +167,28 @@
    "poster": "/media/hf/goblet-squat.jpg"
   }
  },
+ "hack-squat": {
+  "male": {
+   "video": "/media/hf/hack-squat.mp4",
+   "poster": "/media/hf/hack-squat.jpg"
+  }
+ },
  "hammer-curl": {
   "male": {
    "video": "/media/hf/hammer-curl.mp4",
    "poster": "/media/hf/hammer-curl.jpg"
+  }
+ },
+ "hanging-knee-raise": {
+  "male": {
+   "video": "/media/hf/hanging-knee-raise.mp4",
+   "poster": "/media/hf/hanging-knee-raise.jpg"
+  }
+ },
+ "hanging-leg-raise": {
+  "male": {
+   "video": "/media/hf/hanging-leg-raise.mp4",
+   "poster": "/media/hf/hanging-leg-raise.jpg"
   }
  },
  "incline-db-curl": {
@@ -131,10 +215,22 @@
    "poster": "/media/hf/incline-smith-press.jpg"
   }
  },
+ "incline-walk": {
+  "male": {
+   "video": "/media/hf/incline-walk.mp4",
+   "poster": "/media/hf/incline-walk.jpg"
+  }
+ },
  "inverted-row": {
   "female": {
    "video": "/media/hf/inverted-row.female.mp4",
    "poster": "/media/hf/inverted-row.female.jpg"
+  }
+ },
+ "kettlebell-deadlift": {
+  "female": {
+   "video": "/media/hf/kettlebell-deadlift.female.mp4",
+   "poster": "/media/hf/kettlebell-deadlift.female.jpg"
   }
  },
  "landmine-press": {
@@ -149,10 +245,34 @@
    "poster": "/media/hf/lat-pulldown.jpg"
   }
  },
+ "leg-extension": {
+  "male": {
+   "video": "/media/hf/leg-extension.mp4",
+   "poster": "/media/hf/leg-extension.jpg"
+  }
+ },
+ "leg-press": {
+  "male": {
+   "video": "/media/hf/leg-press.mp4",
+   "poster": "/media/hf/leg-press.jpg"
+  }
+ },
+ "low-box-step-up": {
+  "female": {
+   "video": "/media/hf/low-box-step-up.female.mp4",
+   "poster": "/media/hf/low-box-step-up.female.jpg"
+  }
+ },
  "low-to-high-cable-fly": {
   "male": {
    "video": "/media/hf/low-to-high-cable-fly.mp4",
    "poster": "/media/hf/low-to-high-cable-fly.jpg"
+  }
+ },
+ "lying-leg-curl": {
+  "male": {
+   "video": "/media/hf/lying-leg-curl.mp4",
+   "poster": "/media/hf/lying-leg-curl.jpg"
   }
  },
  "machine-chest-press": {
@@ -179,10 +299,22 @@
    "poster": "/media/hf/overhead-cable-triceps-extension.jpg"
   }
  },
+ "pallof-press": {
+  "female": {
+   "video": "/media/hf/pallof-press.female.mp4",
+   "poster": "/media/hf/pallof-press.female.jpg"
+  }
+ },
  "pec-deck": {
   "male": {
    "video": "/media/hf/pec-deck.mp4",
    "poster": "/media/hf/pec-deck.jpg"
+  }
+ },
+ "plank": {
+  "male": {
+   "video": "/media/hf/plank.mp4",
+   "poster": "/media/hf/plank.jpg"
   }
  },
  "reverse-pec-deck": {
@@ -197,10 +329,28 @@
    "poster": "/media/hf/seated-cable-row.jpg"
   }
  },
+ "seated-calf-raise": {
+  "male": {
+   "video": "/media/hf/seated-calf-raise.mp4",
+   "poster": "/media/hf/seated-calf-raise.jpg"
+  }
+ },
  "seated-db-shoulder-press": {
   "male": {
    "video": "/media/hf/seated-db-shoulder-press.mp4",
    "poster": "/media/hf/seated-db-shoulder-press.jpg"
+  }
+ },
+ "seated-leg-curl": {
+  "male": {
+   "video": "/media/hf/seated-leg-curl.mp4",
+   "poster": "/media/hf/seated-leg-curl.jpg"
+  }
+ },
+ "side-plank": {
+  "female": {
+   "video": "/media/hf/side-plank.female.mp4",
+   "poster": "/media/hf/side-plank.female.jpg"
   }
  },
  "single-arm-db-row": {
@@ -209,10 +359,22 @@
    "poster": "/media/hf/single-arm-db-row.jpg"
   }
  },
+ "standing-calf-raise": {
+  "male": {
+   "video": "/media/hf/standing-calf-raise.mp4",
+   "poster": "/media/hf/standing-calf-raise.jpg"
+  }
+ },
  "t-bar-row": {
   "male": {
    "video": "/media/hf/t-bar-row.mp4",
    "poster": "/media/hf/t-bar-row.jpg"
+  }
+ },
+ "trap-bar-deadlift": {
+  "male": {
+   "video": "/media/hf/trap-bar-deadlift.mp4",
+   "poster": "/media/hf/trap-bar-deadlift.jpg"
   }
  }
 }
