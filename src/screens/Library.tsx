@@ -6,6 +6,7 @@ import type { MuscleId } from '../types'
 import { EX, EXERCISES, exName } from '../data/exercises'
 import { MUSCLE_INFO, SAFETY } from '../data/common'
 import { BodyMap } from '../components/BodyMap'
+import { CardioTimer } from '../components/CardioTimer'
 import { ExerciseMedia, ExerciseThumb } from '../components/Media'
 import { Card, Chip, Empty, cx, item, stagger } from '../components/ui'
 import { useSessions } from '../lib/hooks'
@@ -85,6 +86,7 @@ export function ExerciseDetail({ id }: { id: string }) {
           <h1 className="display text-[26px] font-semibold mt-3 leading-tight">{e.name}</h1>
           <div className="flex flex-wrap gap-2 mt-2">{e.equipment.map((x) => <Chip key={x}>{x}</Chip>)}{e.tempo !== '—' && e.tempo !== 'hold' && <Chip>Tempo {e.tempo}</Chip>}</div>
           {past && <div className="mt-2 text-[13px] text-mute num">{lastLine(past, e.loadType === 'hold')}</div>}
+          {e.loadType === 'cardio' && <CardioTimer ex={e.id} />}
           <Card className="mt-3 !p-3">
             {e.loadType === 'cardio'
               ? <div className="text-[14px]"><div className="font-semibold mb-1">Heart-rate zone guide</div><p className="text-mute">Zone 2 is an easy pace where you can talk in short sentences. Intervals: hard means you can’t chat; easy means you recover fully.</p></div>

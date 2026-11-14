@@ -17,6 +17,7 @@ import { shareCard } from '../lib/share'
 import { fmtDate } from '../engine/calendar'
 import { BodyMap } from '../components/BodyMap'
 import { ExerciseMedia } from '../components/Media'
+import { fmtDuration } from '../lib/cardio'
 import { Btn, Chip, Confetti, Sheet, Stepper, cx, spring } from '../components/ui'
 
 const mmss = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.floor(Math.max(0, s) % 60)).padStart(2, '0')}`
@@ -384,7 +385,9 @@ function CardioBlock({ a, step }: { a: Active; step: Step }) {
   useTick(250, st.startedAt !== null)
   const iv = step.intervals
   const total = iv ? iv.rounds * (iv.work + iv.easy) : (step.minutes ?? 10) * 60
-  const el = Math.min(total, st.elapsed + (st.startedAt ? (Date.now() - st.startedAt) / 1000 : 0))
+  const free = step.kind === 'cardio' && !iv   // plain cardio keeps counting past the target
+  const raw = st.elapsed + (st.startedAt ? (Date.now() - st.startedAt) / 1000 : 0)
+  const el = free ? raw : Math.min(total, raw)
   const left = total - el
   const cyc = iv ? iv.work + iv.easy : 0
   const hard = iv ? el % cyc < iv.work : false
@@ -394,7 +397,11 @@ function CardioBlock({ a, step }: { a: Active; step: Step }) {
   const phaseKey = iv ? `${rnd}${hard}` : guide ?? ''
   const lastKey = useRef(phaseKey)
   useEffect(() => { if (st.startedAt && lastKey.current !== phaseKey) { lastKey.current = phaseKey; chime(iv && hard ? 'done' : 'soft', sounds) } })
-  useEffect(() => { if (st.startedAt && left <= 0) { chime('done', sounds); patch((x) => { x.cardio[step.id] = { startedAt: null, elapsed: total, done: true } }) } })
+  useEffect(() => {
+    if (!st.startedAt || left > 0) return
+    if (!free) { chime('done', sounds); patch((x) => { x.cardio[step.id] = { startedAt: null, elapsed: total, done: true } }); return }
+    if (!st.done) { chime('done', sounds); patch((x) => { const c = x.cardio[step.id]; if (c) x.cardio[step.id] = { ...c, done: true } }) }   // target reached: tick it off, keep the clock running
+  })
   const toggle = () => patch((x) => { const c = x.cardio[step.id] ?? { startedAt: null, elapsed: 0, done: false }; x.cardio[step.id] = c.startedAt ? { ...c, startedAt: null, elapsed: c.elapsed + (Date.now() - c.startedAt) / 1000 } : { ...c, startedAt: Date.now() } })
   const ex = EX[step.ex]
   return (
@@ -406,11 +413,11 @@ function CardioBlock({ a, step }: { a: Active; step: Step }) {
         {iv && <div className="text-[13px] text-mute">Round {rnd} of {iv.rounds}</div>}
         {iv && <div className={cx('display text-[30px] font-semibold', hard ? 'accent-grad-text' : 'text-ink')}>{hard ? iv.workLabel : iv.easyLabel} · {mmss(segLeft)}</div>}
         {guide && <div className="display text-[22px] font-semibold accent-text">{guide}</div>}
-        <div className="display text-[64px] font-semibold num leading-none mt-1">{mmss(left)}</div>
-        <div className="text-[12px] text-mute mt-1">{st.done ? 'Complete' : 'remaining'}</div>
+        <div className="display text-[64px] font-semibold num leading-none mt-1">{free ? mmss(el) : mmss(left)}</div>
+        <div className="text-[12px] text-mute mt-1">{free ? (el >= total ? `Target ${mmss(total)} reached${el > total ? ` · +${mmss(el - total)}` : ''}` : `of ${mmss(total)} target`) : st.done ? 'Complete' : 'remaining'}</div>
         <div className="flex justify-center gap-2 mt-4">
-          <Btn onClick={toggle} disabled={st.done}>{st.startedAt ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {el > 0 ? 'Resume' : 'Start'}</>}</Btn>
-          <Btn kind="soft" onClick={() => patch((x) => { x.cardio[step.id] = { startedAt: null, elapsed: el, done: !st.done } })}><Check size={18} /> {st.done ? 'Undo' : 'Mark done'}</Btn>
+          <Btn onClick={toggle} disabled={st.done && !free}>{st.startedAt ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {el > 0 ? 'Resume' : 'Start'}</>}</Btn>
+          <Btn kind="soft" onClick={() => patch((x) => { x.cardio[step.id] = { startedAt: null, elapsed: el, done: free && st.startedAt ? true : !st.done } })}><Check size={18} /> {free && st.startedAt ? 'Stop' : st.done ? 'Undo' : 'Mark done'}</Btn>
         </div>
       </div>
       {step.kind === 'cardio' && !iv && (
@@ -528,12 +535,14 @@ function Finish({ a, steps, onDone }: { a: Active; steps: Step[]; onDone: () => 
     return v + (a.sets[s.id] ?? []).filter((r) => r.done).reduce((x, r) => x + r.w * r.r * (t === 'db' ? 2 : 1) * (s.perSide && t !== 'db' ? 2 : 1), 0)
   }, 0))
   const m = sessionMuscles(doneSteps)
+  const cardioSec = steps.filter((x) => x.kind === 'cardio').reduce((n, x) => { const c = a.cardio[x.id]; return n + (c ? c.elapsed + (c.startedAt ? (endRef.current - c.startedAt) / 1000 : 0) : 0) }, 0)
   useEffect(() => { if (a.prs.length) setFire(Date.now()) }, []) // eslint-disable-line
   const save = async () => {
     setSaving(true)
+    const cardio = Object.fromEntries(steps.filter((x) => x.kind === 'cardio').map((x) => { const c = a.cardio[x.id]; return [x.id, Math.round(c ? c.elapsed + (c.startedAt ? (endRef.current - c.startedAt) / 1000 : 0) : 0)] as const }).filter(([, v]) => v > 0))
     const log: SessionLog = {
       id: a.id, person, date: a.date, key: a.key, title: a.title, cycle: a.cycle, weekIndex: a.weekIndex, startedAt: a.startedAt, finishedAt: endRef.current,
-      sets: a.sets, exOf: Object.fromEntries(steps.map((s) => [s.id, s.ex])), mood, energy, notes, volume, prs: a.prs, updatedAt: Date.now(),
+      sets: a.sets, exOf: Object.fromEntries(steps.map((s) => [s.id, s.ex])), ...(Object.keys(cardio).length ? { cardio } : {}), mood, energy, notes, volume, prs: a.prs, updatedAt: Date.now(),
     }
     await db.sessions.put(log)
     useStore.setState((s) => ({ active: { ...s.active, [person]: null } }))
@@ -552,6 +561,7 @@ function Finish({ a, steps, onDone }: { a: Active; steps: Step[]; onDone: () => 
           {[['Minutes', minutes], ['Sets', setsDone], ['Volume kg', volume]].map(([l, v]) => (
             <div key={l as string} className="card p-3 text-center"><div className="display text-[26px] font-semibold num">{(v as number).toLocaleString('en-IN')}</div><div className="text-[12px] text-mute">{l}</div></div>))}
         </div>
+        {cardioSec > 0 && <div className="text-[13px] text-mute text-center mt-2" data-testid="cardio-line">Cardio timed: {fmtDuration(cardioSec)}</div>}
         {a.prs.length > 0 && <div className="card p-4 mt-3 border-a1/40">
           <div className="flex items-center gap-2 font-semibold accent-text"><Trophy size={18} /> {a.prs.length} personal record{a.prs.length > 1 ? 's' : ''}</div>
           <div className="flex flex-wrap gap-2 mt-2">{a.prs.map((p) => <Chip key={p} tone="accent"><Flame size={13} /> {exName(p)}</Chip>)}</div>

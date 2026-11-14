@@ -11,7 +11,10 @@ export interface DayRow {
   water: number; steps: number; creatine?: boolean; updatedAt: number
   /** Things eaten outside the plan. */
   extras?: Extra[]
+  /** Cardio timed outside a workout (a walk, a bike ride). */
+  cardio?: CardioEntry[]
 }
+export interface CardioEntry { id: string; ex: string; sec: number }
 export interface Extra { id: string; label: string; kcal: number; protein: number }
 
 /** Per-record sync bookkeeping: what we last saw, when it changed, and whether the server has it. */

@@ -121,6 +121,8 @@ export interface SessionLog {
   finishedAt?: number
   sets: Record<string, SetLog[]>
   exOf: Record<string, string>
+  /** Seconds spent on each cardio step (treadmill, bike…), by step id. */
+  cardio?: Record<string, number>
   mood?: number
   energy?: number
   notes?: string

@@ -50,6 +50,8 @@ interface State {
   /** Edit time per content record, e.g. `program:vikas` — drives sync. */
   contentAt: Record<string, number>
   active: Record<Person, Active | null>
+  /** The stand-alone cardio stopwatch (one at a time). Survives a reload. */
+  quick: { ex: string; startedAt: number | null; elapsed: number } | null
   tab: Tab
   overlay: Overlay
   toast: string | null
@@ -76,6 +78,7 @@ export const useStore = create<State>()(
       contentRev: 0,
       contentAt: {},
       active: { vikas: null, varsha: null },
+      quick: null,
       tab: 'today',
       overlay: null,
       toast: null,
@@ -102,7 +105,7 @@ export const useStore = create<State>()(
     {
       name: 'v2fit-store',
       version: 1,
-      partialize: (s) => ({ person: s.person, me: s.me, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, content: s.content, contentAt: s.contentAt, active: s.active, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
+      partialize: (s) => ({ person: s.person, me: s.me, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, content: s.content, contentAt: s.contentAt, active: s.active, quick: s.quick, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
       migrate: (persisted) => persisted as State,
       merge: (persisted, current) => ({ ...current, ...(persisted as object), content: { programs: {}, meals: {}, ...((persisted as Partial<State>)?.content ?? {}) }, contentAt: (persisted as Partial<State>)?.contentAt ?? {} }),
     },

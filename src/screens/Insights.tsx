@@ -6,7 +6,8 @@ import { useStore, usePerson } from '../store'
 import { NAME, PEOPLE, type Person } from '../types'
 import { db, useLive, type DayRow, type WeightRow } from '../db'
 import { usePosition } from '../lib/hooks'
-import { fmtDate } from '../engine/calendar'
+import { addDays, fmtDate, istDate } from '../engine/calendar'
+import { cardioTotals, fmtDuration } from '../lib/cardio'
 import { targets, stepsTarget } from '../engine/nutrition'
 import { balanceTone, dayStats, narrate, rangeDates, summarize, type DayStat, type Summary } from '../lib/insights'
 import { Card, Section, Segmented, Skeletons, cx } from '../components/ui'
@@ -63,6 +64,7 @@ export function Insights() {
   const pdata = usePersonData(who)
   const todayStr = usePosition().date
   const stalled = useMemo(() => (pdata.sessions ? stalledLifts(pdata.sessions, todayStr) : []), [pdata.sessions, todayStr])
+  const cardio7 = useMemo(() => { const t = istDate(); return cardioTotals(pdata.sessions ?? [], pdata.days ?? [], addDays(t, -6), t) }, [pdata.sessions, pdata.days])
   const review = useMemo(() => (w7 && pdata.weights ? weeklyReview(who, w7.stats, w7.sum, w7.target, pdata.weights, stalled) : null), [w7, pdata.weights, stalled, who])
   const advice = useMemo(() => deloadAdvice(stalled), [stalled])
   const notes = useMemo(() => (a ? narrate(who, a.stats, a.sum, a.target, stepsTarget(who, profile)) : []), [a, who, profile])
@@ -98,6 +100,7 @@ export function Insights() {
                   <div><div className="display text-[24px] font-semibold num">{review.proteinDays}<span className="text-mute text-[15px]"> / {review.eatDays || 0}</span></div><div className="text-[12px] text-mute">protein days</div></div>
                   <div><div className="display text-[24px] font-semibold num">{review.weightDelta == null ? '—' : `${review.weightDelta > 0 ? '+' : ''}${review.weightDelta}`}</div><div className="text-[12px] text-mute">kg this week</div></div>
                 </div>
+                {cardio7.seconds > 0 && <div className="mt-2 text-center text-[13px] text-mute" data-testid="cardio-week">Cardio timed: <span className="text-ink font-semibold">{fmtDuration(cardio7.seconds)}</span></div>}
                 <div className="mt-3 rounded-2xl bg-s2 p-3"><div className="text-[12px] uppercase tracking-widest accent-text font-semibold">Next week, one thing</div><p className="text-[14px] mt-1">{review.focus}</p></div>
               </Card>}
               {stalled.length > 0 && <Card className="mt-3" data-testid="stalled">
