@@ -92,7 +92,8 @@ export function Diet() {
             const c = menu.chosen.find((x) => x.slot === s.id)!
             const eaten = isToday && !!day.eaten[s.id]
             const alt = swapOptions(s, c.option.id, profile.veg)
-            const altO = alt.strict[0] ?? alt.loose[0]
+            const whey = menu.chosen.filter((x) => x.slot !== s.id).reduce((n, x) => n + (x.option.whey ?? 0), 0)
+            const alts = [...alt.strict, ...alt.loose].filter((o) => whey + (o.whey ?? 0) <= WHEY_CAP).slice(0, 2)
             return (
               <motion.div variants={item} key={s.id} layout className={cx('card p-3.5', s.id === nextSlot && 'accent-ring', eaten && 'opacity-70')}>
                 <div className="flex items-center gap-2 text-[12px]">
@@ -106,7 +107,6 @@ export function Diet() {
                   <div className="flex-1 min-w-0">
                     <div className={cx('text-[15px] font-medium', eaten && 'line-through')}>{mealName(c.option, menu.scaled.qty[s.id])}</div>
                     <div className="text-[13px] text-mute num mt-0.5">≈ {menu.scaled.kcal[s.id]} kcal · ≈ {menu.scaled.protein[s.id]} g protein{c.option.tag ? ` · ${c.option.tag === 'S' ? 'South' : 'North'}` : ''}</div>
-                    {altO && <div className="text-[12px] text-mute mt-1.5"><span className="font-semibold">Alt:</span> {mealName(altO)} <span className="num">(≈ {altO.kcal}/{altO.protein})</span></div>}
                   </div>
                   <div className="flex flex-col gap-1.5 shrink-0">
                     {isToday && <motion.button whileTap={{ scale: 0.86 }} type="button" aria-pressed={eaten} aria-label={eaten ? `${s.label} eaten — tap to undo` : `Mark ${s.label} as eaten`} onClick={() => void patchDay(person, pos.date, (x) => { x.eaten[s.id] = !x.eaten[s.id] })}
@@ -114,6 +114,11 @@ export function Diet() {
                     {s.options.length > 1 && <button type="button" aria-label={`Swap ${s.label}`} onClick={() => setSwapSlot(s.id)} className="w-12 h-12 rounded-2xl grid place-items-center border border-line bg-s2"><Repeat size={18} /></button>}
                   </div>
                 </div>
+                {!eaten && alts.length > 0 && (
+                  <div className="mt-2.5 pt-1.5 border-t border-line/40" data-testid="meal-alts">
+                    <div className="text-[11px] uppercase tracking-widest font-semibold text-mute pt-1">Or have instead</div>
+                    {alts.map((o) => <AltRow key={o.id} cur={c.option} o={o} onPick={() => applySwap(s.id, o.id)} />)}
+                  </div>)}
               </motion.div>)
           })}
         </div>
@@ -240,6 +245,25 @@ function MealThumb({ opt, onOpen }: { opt: MealOption; onOpen: () => void }) {
 }
 
 const signed = (n: number, unit: string) => `${n > 0 ? '+' : n < 0 ? '−' : '±'}${Math.abs(Math.round(n * 10) / 10)}${unit}`
+
+/** One alternative shown right on the meal card: tap to use it. */
+function AltRow({ cur, o, onPick }: { cur: MealOption; o: MealOption; onPick: () => void }) {
+  const [ok, setOk] = useState(true)
+  const dk = o.kcal - cur.kcal, dp = o.protein - cur.protein
+  return (
+    <button type="button" onClick={onPick} aria-label={`Use ${mealName(o)} instead`} data-testid="meal-alt" className="w-full flex items-center gap-2.5 min-h-[52px] py-1.5 text-left active:opacity-70">
+      {ok ? <img src={`/media/food/${o.id}.webp`} alt="" loading="lazy" decoding="async" className="shrink-0 w-10 h-10 rounded-lg object-cover bg-s2" onError={() => setOk(false)} /> : <span className="shrink-0 w-10 h-10 rounded-lg bg-s2" />}
+      <span className="flex-1 min-w-0">
+        <span className="block text-[14px] leading-snug">{mealName(o)}</span>
+        <span className="block text-[12px] text-mute num">≈ {o.kcal} kcal · {o.protein} g protein</span>
+      </span>
+      <span className="text-right text-[11px] num shrink-0">
+        <span className={cx('block', Math.abs(dk) <= 0.15 * cur.kcal ? 'text-ok' : 'text-warn')}>{signed(dk, ' kcal')}</span>
+        <span className={cx('block', dp >= -5 ? 'text-ok' : 'text-warn')}>{signed(dp, ' g')}</span>
+      </span>
+    </button>
+  )
+}
 
 function SwapList({ cur, strict, loose, onPick }: { cur: MealOption; strict: MealOption[]; loose: MealOption[]; onPick: (id: string) => void }) {
   const row = (o: MealOption) => {
