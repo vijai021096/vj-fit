@@ -293,7 +293,7 @@ function Work({ a, steps, rir, modName, past, prior, loading }: { a: Active; ste
                 {step.gate && <button type="button" onClick={() => { set((s) => { s.profiles[person].squatApproved = true }); patch((x) => { delete x.sets[step.id] }) }}
                   className="mt-2 w-full min-h-[48px] rounded-2xl border border-line bg-s2 text-[14px] font-medium inline-flex items-center justify-center gap-2"><Check size={16} /> {step.gate.label}</button>}
                 <div className="card p-3 mt-3">
-                  <BodyMap key={step.ex} primary={ex.muscles.primary} secondary={ex.muscles.secondary} height={230} info />
+                  <BodyMap both key={step.ex} primary={ex.muscles.primary} secondary={ex.muscles.secondary} height={230} info />
                   <div className="text-center text-[12px] text-mute mt-1">Tap a muscle to see what it does</div>
                 </div>
                 <div className="mt-3 space-y-2">
