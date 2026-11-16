@@ -6,7 +6,7 @@ import { NAME } from '../types'
 import { useStore, usePerson, type Active } from '../store'
 import { db, setWeight } from '../db'
 import { EX, exName } from '../data/exercises'
-import { COOLDOWN, COOLDOWN_HOLD, DAY0, FIRST_TIME, RIR_EXPLAIN, SAFETY, WARMUP, WEEK1_BANNER } from '../data/common'
+import { COOLDOWN, COOLDOWN_HOLD, DAY0, FIRST_TIME, RIR_EXPLAIN, ROUTINE_ID, SAFETY, WARMUP, WEEK1_BANNER } from '../data/common'
 import { resolveActive } from '../lib/session'
 import { restText, rxText, sessionMuscles } from '../engine/program'
 import { isPR, lastLine, rampSets, suggest, type Past, type Suggestion } from '../engine/progression'
@@ -18,6 +18,7 @@ import { fmtDate } from '../engine/calendar'
 import { BodyMap } from '../components/BodyMap'
 import { ExerciseMedia } from '../components/Media'
 import { fmtDuration } from '../lib/cardio'
+import { RoutineImage } from '../components/RoutineImage'
 import { Btn, Chip, Confetti, Sheet, Stepper, cx, spring } from '../components/ui'
 
 export const mmss = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.floor(Math.max(0, s) % 60)).padStart(2, '0')}`
@@ -133,6 +134,7 @@ function Intro({ a }: { a: Active }) {
 
 // ── Warm-up ──────────────────────────────────────────────────────────────────
 function Warmup({ a, steps, kind, past }: { a: Active; steps: Step[]; kind: string; past: Record<string, Past[]> }) {
+  const person = usePerson()
   const patch = useStore((s) => s.patchActive)
   const sounds = useStore((s) => s.settings.sounds)
   const cd = useCountdown(300, sounds)
@@ -146,6 +148,7 @@ function Warmup({ a, steps, kind, past }: { a: Active; steps: Step[]; kind: stri
       <Top title="Warm-up" sub={a.title} />
       <div className="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
         <div className="card p-5 mt-2 text-center">
+          <RoutineImage id={ROUTINE_ID[WARMUP.general]} person={person} className="aspect-video w-full mb-3" />
           <div className="text-[13px] text-mute">{a.isDay0 ? DAY0.warmup : WARMUP.general}</div>
           <div className="display text-[64px] font-semibold num leading-none mt-2">{mmss(cd.left)}</div>
           <div className="flex justify-center gap-2 mt-4">
@@ -157,6 +160,7 @@ function Warmup({ a, steps, kind, past }: { a: Active; steps: Step[]; kind: stri
           <div className="space-y-2">{drills.map((d, i) => (
             <button key={d} type="button" onClick={() => tog(`wu${i}`)} aria-pressed={!!a.checks[`wu${i}`]} className="w-full min-h-[52px] flex items-center gap-3 text-left px-3 rounded-2xl bg-s2 border border-line/60">
               <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', a.checks[`wu${i}`] ? 'accent-grad border-transparent text-[#08080c]' : 'border-line')}>{a.checks[`wu${i}`] && <Check size={16} />}</span>
+              <RoutineImage id={ROUTINE_ID[d]} person={person} className="w-16 h-16" />
               <span className="text-[15px]">{d}</span>
             </button>))}</div>
         </>}
@@ -490,6 +494,7 @@ function RestOverlay({ steps }: { steps: Step[] }) {
 
 // ── Cool-down ────────────────────────────────────────────────────────────────
 function Cooldown() {
+  const person = usePerson()
   const patch = useStore((s) => s.patchActive)
   const sounds = useStore((s) => s.settings.sounds)
   const [i, setI] = useState(0)
@@ -501,6 +506,7 @@ function Cooldown() {
       <Top title="Cool-down" sub="5 stretches · 30 s each" />
       <div className="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
         <div className="card p-6 mt-2 text-center">
+          {!over && <RoutineImage id={ROUTINE_ID[COOLDOWN[i]]} person={person} className="aspect-video w-full mb-3" />}
           <div className="text-[13px] text-mute">{over ? 'All done' : `Stretch ${i + 1} of ${COOLDOWN.length}`}</div>
           <div className="display text-[26px] font-semibold mt-1">{over ? 'Nice work.' : COOLDOWN[i]}</div>
           {!over && <div className="display text-[64px] font-semibold num leading-none mt-3">{mmss(Math.ceil(cd.left))}</div>}

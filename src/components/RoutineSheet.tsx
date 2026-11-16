@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Check, Pause, Play, SkipForward } from 'lucide-react'
-import { COOLDOWN, COOLDOWN_HOLD, SAFETY, WARMUP } from '../data/common'
+import { COOLDOWN, COOLDOWN_HOLD, ROUTINE_ID, SAFETY, WARMUP } from '../data/common'
+import { RoutineImage } from './RoutineImage'
+import { usePerson } from '../store'
 import { mmss, useCountdown } from '../screens/Session'
 import { useStore } from '../store'
 import { Btn, Segmented, Sheet, cx } from './ui'
@@ -21,12 +23,14 @@ export function RoutineSheet({ open, initial, dayKind, onClose }: { open: boolea
 
 function Warm({ dayKind }: { dayKind: string }) {
   const sounds = useStore((s) => s.settings.sounds)
+  const person = usePerson()
   const cd = useCountdown(300, sounds)
   const [ticked, setTicked] = useState<Record<number, boolean>>({})
   const drills = dayKind === 'lower' ? WARMUP.lower : dayKind === 'upper' ? WARMUP.upper : [...WARMUP.upper, ...WARMUP.lower]
   return (
     <div data-testid="warm-routine">
       <div className="card p-5 text-center">
+        <RoutineImage id={ROUTINE_ID[WARMUP.general]} person={person} className="aspect-video w-full mb-3" />
         <div className="text-[13px] text-mute">{WARMUP.general}</div>
         <div className="display text-[56px] font-semibold num leading-none mt-2">{mmss(cd.left)}</div>
         <div className="flex justify-center mt-3"><Btn onClick={cd.toggle}>{cd.running ? <><Pause size={18} /> Pause</> : cd.done ? <><Check size={18} /> Done</> : <><Play size={18} /> Start 5 min</>}</Btn></div>
@@ -35,6 +39,7 @@ function Warm({ dayKind }: { dayKind: string }) {
       <div className="space-y-2">{drills.map((d, i) => (
         <button key={d} type="button" aria-pressed={!!ticked[i]} onClick={() => setTicked((t) => ({ ...t, [i]: !t[i] }))} className="w-full min-h-[52px] flex items-center gap-3 text-left px-3 rounded-2xl bg-s2 border border-line/60">
           <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', ticked[i] ? 'accent-grad border-transparent text-[#08080c]' : 'border-line')}>{ticked[i] && <Check size={16} />}</span>
+          <RoutineImage id={ROUTINE_ID[d]} person={person} className="w-16 h-16" />
           <span className="text-[15px]">{d}</span>
         </button>))}</div>
       <p className="text-[13px] text-mute mt-4">Before your first lift, do 1–2 light practice sets of it. Ramp-up weights show inside the workout.</p>
@@ -44,6 +49,7 @@ function Warm({ dayKind }: { dayKind: string }) {
 }
 
 function Cool() {
+  const person = usePerson()
   const sounds = useStore((s) => s.settings.sounds)
   const [i, setI] = useState(0)
   const cd = useCountdown(COOLDOWN_HOLD, sounds, () => setTimeout(() => setI((x) => x + 1), 400))
@@ -52,6 +58,7 @@ function Cool() {
   return (
     <div data-testid="cool-routine">
       <div className="card p-6 text-center">
+        {!over && <RoutineImage id={ROUTINE_ID[COOLDOWN[i]]} person={person} className="aspect-video w-full mb-3" />}
         <div className="text-[13px] text-mute">{over ? 'All done' : `Stretch ${i + 1} of ${COOLDOWN.length} · ${COOLDOWN_HOLD} s each`}</div>
         <div className="display text-[26px] font-semibold mt-1">{over ? 'Nice work.' : COOLDOWN[i]}</div>
         {!over && <div className="display text-[56px] font-semibold num leading-none mt-3">{mmss(Math.ceil(cd.left))}</div>}

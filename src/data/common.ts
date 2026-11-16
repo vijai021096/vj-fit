@@ -19,6 +19,14 @@ export const WARMUP = {
 export const COOLDOWN = ['Doorway chest stretch', 'Lat stretch', 'Hip-flexor stretch', 'Hamstring stretch', 'Child’s pose']
 export const COOLDOWN_HOLD = 30
 
+/** File ids for the warm-up / cool-down pictures in /media/routine (id.webp, id-2.webp for the second pose, id.f.webp for Varsha). */
+export const ROUTINE_ID: Record<string, string> = {
+  [WARMUP.general]: 'warm-bike',
+  'Arm circles × 10': 'arm-circles', 'Band pull-aparts × 15': 'band-pull-aparts', 'Scap push-ups × 10': 'scap-push-ups',
+  'Bodyweight squats × 10': 'bodyweight-squats', 'Glute bridges × 10': 'glute-bridges', 'Leg swings × 10 per side': 'leg-swings', 'Hip-hinge drill × 10': 'hip-hinge-drill',
+  'Doorway chest stretch': 'doorway-chest-stretch', 'Lat stretch': 'lat-stretch', 'Hip-flexor stretch': 'hip-flexor-stretch', 'Hamstring stretch': 'hamstring-stretch', 'Child’s pose': 'childs-pose',
+}
+
 export const SAFETY = 'Sharp or joint pain → stop that exercise and swap it. Muscle burn is fine.'
 export const WEEK1_BANNER = 'Ask a trainer to watch your squat, bench and Romanian deadlift once.'
 export const FIRST_TIME = 'Pick a weight you could lift ~15 times, then do 10.'
