@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { AlertTriangle, ArrowRight, CalendarOff, Check, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CalendarOff, Check, Pencil, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils } from 'lucide-react'
 import { useStore, usePerson, useWeightHidden } from '../store'
 import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
 import { db, dayId, patchDay, setWeight, useLive, type DayRow } from '../db'
 import { useNow, usePosition, useSessions, useSkips } from '../lib/hooks'
 import { syncReminders } from '../lib/reminders'
+import { SessionEditor } from '../components/SessionEditor'
 import { startSession, todayPlan } from '../lib/session'
 import { PROGRAMS, resolveSession, sessionMuscles } from '../engine/program'
 import { addDays, fmtDate, greeting, istClock, istLong, istMinutes, week1Start } from '../engine/calendar'
@@ -58,6 +59,7 @@ export function Today() {
   const skips = useSkips(person)
   const skippedToday = skips.has(pos.date)
   const [skipOpen, setSkipOpen] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
   const [stepsOpen, setStepsOpen] = useState(false)
   const [kg, setKg] = useState(profile.weightKg)
   const todayW = useLive(() => db.weights.get(dayId(person, pos.date)), [person, pos.date], undefined)
@@ -181,6 +183,7 @@ export function Today() {
                 {thisDone
                   ? <div className="flex-1 min-h-[48px] rounded-2xl bg-ok/15 text-ok border border-ok/30 font-semibold grid place-items-center"><span className="inline-flex items-center gap-2"><Check size={18} /> Logged{doneToday?.volume ? ` · ${doneToday.volume.toLocaleString('en-IN')} kg` : ''}</span></div>
                   : <Btn className="flex-1" onClick={() => begin(pos.weekday, plan.kind === 'day0')}><Play size={18} /> Start</Btn>}
+                {thisDone && doneToday && <Btn kind="soft" label="Edit this workout" onClick={() => setEditId(doneToday.id)}><Pencil size={18} /></Btn>}
                 {plan.kind === 'day' && <Btn kind="soft" label="Do a different session" onClick={() => setPick(true)}><Shuffle size={18} /></Btn>}
               </div>
               {!thisDone && <button type="button" data-testid="skip-today" onClick={() => setSkipOpen(true)} className="relative w-full mt-2 min-h-[44px] rounded-2xl text-[14px] text-mute inline-flex items-center justify-center gap-2 active:text-ink"><CalendarOff size={15} /> Not going to the gym today</button>}
@@ -235,6 +238,7 @@ export function Today() {
 
       <Section title="Together"><Together /></Section>
 
+      <SessionEditor id={editId} onClose={() => setEditId(null)} />
       <Sheet open={skipOpen} onClose={() => setSkipOpen(false)} title="Not going to the gym today?">
         <p className="text-[14px] text-mute mb-3">Pick a reason. Your streak stays safe, today won’t count as a miss, and the gym reminder is paused.</p>
         <div className="space-y-2" data-testid="skip-reasons">

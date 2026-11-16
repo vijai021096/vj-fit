@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { AlertTriangle, Award, Camera, Check, ImageOff, LineChart as LC, Lock, Ruler, Scale, Trash2 } from 'lucide-react'
+import { AlertTriangle, Award, Camera, Check, ImageOff, LineChart as LC, Lock, Pencil, Ruler, Scale, Trash2 } from 'lucide-react'
 import { useStore, usePerson, useWeightHidden } from '../store'
 import { NAME, type Person, type SessionLog } from '../types'
+import { SessionEditor } from '../components/SessionEditor'
 import { db, dayId, setWeight, useLive, type MeasureRow, type PhotoRow, type WeightRow } from '../db'
 import { usePosition, useSessions } from '../lib/hooks'
 import { addDays, dateOf, diffDays, fmtDate, week1Start } from '../engine/calendar'
@@ -37,7 +38,7 @@ export function Progress() {
       <Section title="Measurements"><Measurements person={person} measures={measures} today={pos.date} /></Section>
       <Section title="Progress photos"><Photos person={person} today={pos.date} /></Section>
       <Section title="★ Lifts"><Lifts person={person} sessions={sessions} /></Section>
-      <Section title="Sessions"><Heat sessions={sessions} /></Section>
+      <Section title="Sessions"><Heat sessions={sessions} /><RecentSessions sessions={sessions} /></Section>
       <Section title="Milestones"><Badges person={person} sessions={sessions} weights={weights} /></Section>
     </motion.div>
   )
@@ -207,6 +208,22 @@ function Lifts({ person, sessions }: { person: Person; sessions: SessionLog[] })
       </div>
       <div className="text-[12px] text-mute">{assist ? 'Assistance kg — lower is stronger.' : 'Heaviest completed set each session.'}</div>
     </Card>
+  )
+}
+
+function RecentSessions({ sessions }: { sessions: SessionLog[] }) {
+  const [editId, setEditId] = useState<string | null>(null)
+  const recent = sessions.filter((s) => s.finishedAt).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
+  if (!recent.length) return null
+  return (
+    <div className="mt-3 space-y-2" data-testid="recent-sessions">
+      {recent.map((s) => (
+        <button key={s.id} type="button" onClick={() => setEditId(s.id)} aria-label={`Edit ${s.title} on ${fmtDate(s.date)}`} className="w-full card px-4 min-h-[56px] flex items-center justify-between text-left active:opacity-70">
+          <span><span className="block font-medium">{s.title}</span><span className="block text-[12px] text-mute">{fmtDate(s.date)}{s.volume ? ` · ${s.volume.toLocaleString('en-IN')} kg` : ''}</span></span>
+          <span className="text-[13px] text-mute inline-flex items-center gap-1.5"><Pencil size={14} /> Edit</span>
+        </button>))}
+      <SessionEditor id={editId} onClose={() => setEditId(null)} />
+    </div>
   )
 }
 

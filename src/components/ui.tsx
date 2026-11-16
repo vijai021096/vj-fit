@@ -1,6 +1,6 @@
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, useTransform } from 'framer-motion'
 import { Minus, Plus, X } from 'lucide-react'
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 export const cx = (...a: (string | false | null | undefined)[]) => a.filter(Boolean).join(' ')
 export const spring = { type: 'spring' as const, stiffness: 420, damping: 34 }
@@ -52,17 +52,20 @@ export function Ring({ value, size = 64, stroke = 7, children, label }: { value:
 }
 
 export function Stepper({ value, onChange, step = 1, min = 0, max = 999, unit, label, big, tight }: { value: number; onChange: (v: number) => void; step?: number; min?: number; max?: number; unit?: string; label: string; big?: boolean; tight?: boolean }) {
+  const [txt, setTxt] = useState<string | null>(null)   // what's being typed, so "12." and "12.0" aren't rewritten mid-keystroke
   const set = (v: number) => onChange(Math.max(min, Math.min(max, Math.round(v * 100) / 100)))
+  const nudge = (v: number) => { setTxt(null); set(v) }
   const b = cx('grid place-items-center rounded-xl bg-s2 border border-line/70 active:bg-s3 shrink-0', big ? 'w-12 h-12' : tight ? 'w-10 h-12' : 'w-11 h-12')
   return (
     <div className={cx('flex items-center', tight ? 'gap-0.5' : 'gap-1')} role="group" aria-label={`${label} stepper`}>
-      <button type="button" className={b} aria-label={`Decrease ${label}`} onClick={() => set(value - step)}><Minus size={18} /></button>
+      <button type="button" className={b} aria-label={`Decrease ${label}`} onClick={() => nudge(value - step)}><Minus size={18} /></button>
       <label className={cx('flex flex-col items-center', tight ? 'w-[42px]' : 'min-w-[52px]')}>
-        <input aria-label={label} inputMode="decimal" className={cx(tight ? 'w-[42px] text-[18px]' : 'w-[56px] text-[20px]', 'bg-transparent text-center display font-semibold num outline-none')} value={Number.isFinite(value) ? value : 0}
-          onChange={(e) => { const n = parseFloat(e.target.value); set(Number.isNaN(n) ? 0 : n) }} onFocus={(e) => e.target.select()} />
+        <input aria-label={label} inputMode="decimal" className={cx(tight ? 'w-[42px] text-[18px]' : 'w-[56px] text-[20px]', 'bg-transparent text-center display font-semibold num outline-none')} value={txt ?? (Number.isFinite(value) ? String(value) : '0')}
+          onChange={(e) => { const t = e.target.value.replace(',', '.'); if (!/^\d*\.?\d{0,2}$/.test(t)) return; setTxt(t); const n = parseFloat(t); set(Number.isNaN(n) ? 0 : n) }}
+          onFocus={(e) => e.target.select()} onBlur={() => setTxt(null)} />
         {unit && <span className="text-[10px] uppercase tracking-wider text-mute -mt-1 whitespace-nowrap">{unit}</span>}
       </label>
-      <button type="button" className={b} aria-label={`Increase ${label}`} onClick={() => set(value + step)}><Plus size={18} /></button>
+      <button type="button" className={b} aria-label={`Increase ${label}`} onClick={() => nudge(value + step)}><Plus size={18} /></button>
     </div>
   )
 }
