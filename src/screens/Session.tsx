@@ -20,7 +20,7 @@ import { ExerciseMedia } from '../components/Media'
 import { fmtDuration } from '../lib/cardio'
 import { Btn, Chip, Confetti, Sheet, Stepper, cx, spring } from '../components/ui'
 
-const mmss = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.floor(Math.max(0, s) % 60)).padStart(2, '0')}`
+export const mmss = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.floor(Math.max(0, s) % 60)).padStart(2, '0')}`
 const isLoadless = (t: string) => t === 'bw' || t === 'hold' || t === 'cardio'
 
 export function SessionScreen() {
@@ -74,7 +74,7 @@ function Top({ title, sub, right }: { title: string; sub?: string; right?: React
 }
 
 // ── Countdown (timestamp based, so it survives lock / app switch) ────────────
-function useCountdown(total: number, sounds: boolean, onDone?: () => void) {
+export function useCountdown(total: number, sounds: boolean, onDone?: () => void) {
   const [st, setSt] = useState<{ startedAt: number | null; elapsed: number }>({ startedAt: null, elapsed: 0 })
   useTick(250, st.startedAt !== null)
   const el = st.elapsed + (st.startedAt ? (Date.now() - st.startedAt) / 1000 : 0)
