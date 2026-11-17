@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Dumbbell, Flame, Footprints, Utensils } from 'lucide-react'
+import { ArrowLeft, Download, Dumbbell, Flame, Footprints, Utensils } from 'lucide-react'
 import { Bar, CartesianGrid, Cell, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useStore, usePerson } from '../store'
 import { NAME, PEOPLE, type Person } from '../types'
@@ -10,13 +10,16 @@ import { addDays, fmtDate, istDate } from '../engine/calendar'
 import { cardioTotals, fmtDuration } from '../lib/cardio'
 import { targets, stepsTarget } from '../engine/nutrition'
 import { balanceTone, dayStats, narrate, rangeDates, summarize, type DayStat, type Summary } from '../lib/insights'
-import { Card, Section, Segmented, Skeletons, cx } from '../components/ui'
+import { Btn, Card, Section, Segmented, Sheet, Skeletons, cx } from '../components/ui'
+import { buildInsightsPdf } from '../lib/insightsPdf'
+import { saveBlob } from '../lib/share'
 import type { SessionLog } from '../types'
 import { exName } from '../data/exercises'
 import { deloadAdvice, stalledLifts } from '../lib/plateau'
 import { weeklyReview } from '../lib/weekly'
 
 type Range = '7' | '30' | '90'
+const PDF_DAYS = [7, 14, 30, 60, 90, 180]
 const tip = { background: 'rgb(var(--s2))', border: '1px solid rgb(var(--line))', borderRadius: 12, fontSize: 12 }
 const axis = { fill: 'rgb(var(--mute))', fontSize: 11 }
 
@@ -56,6 +59,10 @@ export function Insights() {
   const [who, setWho] = useState<Person>(me)
   const [range, setRange] = useState<Range>('7')
   const n = Number(range)
+  const [dlOpen, setDlOpen] = useState(false)
+  const [dlDays, setDlDays] = useState('30')
+  const [dlBusy, setDlBusy] = useState(false)
+  const [dlErr, setDlErr] = useState('')
   const a = useStats(who, n)
   const other = PEOPLE.find((p) => p !== who)!
   const b = useStats(other, n)
@@ -67,6 +74,23 @@ export function Insights() {
   const cardio7 = useMemo(() => { const t = istDate(); return cardioTotals(pdata.sessions ?? [], pdata.days ?? [], addDays(t, -6), t) }, [pdata.sessions, pdata.days])
   const review = useMemo(() => (w7 && pdata.weights ? weeklyReview(who, w7.stats, w7.sum, w7.target, pdata.weights, stalled, (pdata.days ?? []).filter((d) => d.skip && d.date >= addDays(istDate(), -6) && d.date <= istDate()).length) : null), [w7, pdata.weights, pdata.days, stalled, who])
   const advice = useMemo(() => deloadAdvice(stalled), [stalled])
+  const dlN = Math.min(365, Math.max(1, Math.floor(Number(dlDays)) || 0))
+  const dlValid = Number.isFinite(Number(dlDays)) && Number(dlDays) >= 1 && Number(dlDays) <= 365
+  const download = async () => {
+    if (!pdata.days || !pdata.sessions || !pdata.weights || !dlValid) return
+    setDlBusy(true); setDlErr('')
+    try {
+      const t = istDate(), stats = dayStats(who, rangeDates(t, dlN), pdata.days, pdata.sessions, pdata.weights, profile, s.settings)
+      const sum = summarize(stats), tg = targets(who, profile), first = stats[0].date
+      const blob = await buildInsightsPdf({
+        name: NAME[who], goal: who === 'vikas' ? 'Lean bulk' : 'Fat loss and strength', stats, sum, target: tg, stepsGoal: stepsTarget(who, profile),
+        notes: narrate(who, stats, sum, tg, stepsTarget(who, profile)), weights: pdata.weights.filter((w) => w.date >= first && w.date <= t).map((w) => ({ date: w.date, kg: w.kg })),
+        generated: fmtDate(t, { day: 'numeric', month: 'short', year: 'numeric' }),
+      })
+      await saveBlob(blob, `V2Fit-Insights-${NAME[who]}-${t}-${dlN}d.pdf`)
+      setDlOpen(false)
+    } catch (e) { setDlErr('Could not make the PDF. Try again.'); console.error(e) } finally { setDlBusy(false) }
+  }
   const notes = useMemo(() => (a ? narrate(who, a.stats, a.sum, a.target, stepsTarget(who, profile)) : []), [a, who, profile])
   const chart = useMemo(() => (a?.stats ?? []).map((d: DayStat) => ({ date: d.date, eaten: d.eaten || null, burn: d.logged ? d.burn : null, workout: d.workoutBurn + d.stepBurn })), [a])
   const weekly = useMemo(() => {
@@ -84,6 +108,7 @@ export function Insights() {
         <div className="safe-t shrink-0 flex items-center gap-2 px-3 py-2">
           <button type="button" aria-label="Back" onClick={() => s.open(null)} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><ArrowLeft size={20} /></button>
           <h1 className="display font-semibold text-[22px] flex-1">Insights</h1>
+          <button type="button" aria-label="Download as PDF" data-testid="insights-pdf" onClick={() => setDlOpen(true)} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Download size={19} /></button>
         </div>
         <div className="px-4 pb-2 flex items-center justify-between gap-2">
           <Segmented id="ins-who" small value={who} onChange={setWho} options={PEOPLE.map((p) => ({ value: p, label: NAME[p] }))} />
@@ -176,6 +201,22 @@ export function Insights() {
           )}
         </div>
       </div>
+      <Sheet open={dlOpen} onClose={() => setDlOpen(false)} title="Download as PDF">
+        <p className="text-[14px] text-mute">{NAME[who]}'s insights for the last…</p>
+        <div className="flex flex-wrap gap-2 mt-3" role="radiogroup" aria-label="Number of days">
+          {PDF_DAYS.map((d) => <button key={d} type="button" role="radio" aria-checked={dlDays === String(d)} onClick={() => setDlDays(String(d))}
+            className={cx('min-h-[44px] px-4 rounded-full border text-[14px] font-semibold', dlDays === String(d) ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s2 border-line/60 text-ink')}>{d} days</button>)}
+        </div>
+        <label className="flex items-center gap-3 mt-4 text-[14px]">
+          <span className="text-mute">Or a number of days</span>
+          <input aria-label="Custom number of days" data-testid="pdf-days" inputMode="numeric" value={dlDays} onChange={(e) => setDlDays(e.target.value.replace(/\D/g, '').slice(0, 3))}
+            className="w-20 min-h-[44px] rounded-xl bg-s2 border border-line/60 text-center display font-semibold text-[18px] outline-none" />
+        </label>
+        <p className="text-[12px] text-mute mt-2">1 to 365 days, counting back from today.{!dlValid && dlDays !== '' ? ' Enter a number between 1 and 365.' : ''}</p>
+        <p className="text-[12px] text-mute mt-1">Includes the summary, plain-words notes, calorie chart, week by week table, weight and a day-by-day log.</p>
+        {dlErr && <p role="alert" className="text-[13px] text-warn mt-2">{dlErr}</p>}
+        <Btn className="w-full mt-4" disabled={dlBusy || !dlValid || !pdata.days} onClick={download}><Download size={18} /> {dlBusy ? 'Making PDF…' : `Download ${dlValid ? dlN : ''}-day PDF`}</Btn>
+      </Sheet>
     </motion.div>
   )
 }

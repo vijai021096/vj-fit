@@ -30,3 +30,15 @@ function wrap(x: CanvasRenderingContext2D, text: string, px: number, py: number,
   for (const w of text.split(' ')) { const t = line ? `${line} ${w}` : w; if (x.measureText(t).width > max && line) { x.fillText(line, px, y); line = w; y += lh } else line = t }
   x.fillText(line, px, y)
 }
+
+/** Save a generated file: the share sheet on phones (Save to Files), a normal download elsewhere. */
+export async function saveBlob(blob: Blob, name: string) {
+  const file = new File([blob], name, { type: blob.type || 'application/pdf' })
+  const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
+  const phone = /iPhone|iPad|iPod/.test(navigator.userAgent)
+  if (phone && nav.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: name }); return } catch (e) { if ((e as Error)?.name === 'AbortError') return }
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove()
+  setTimeout(() => URL.revokeObjectURL(a.href), 30000)
+}
