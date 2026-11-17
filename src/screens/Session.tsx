@@ -18,6 +18,7 @@ import { fmtDate } from '../engine/calendar'
 import { BodyMap } from '../components/BodyMap'
 import { ExerciseMedia } from '../components/Media'
 import { fmtDuration } from '../lib/cardio'
+import { RoutineSheet } from '../components/RoutineSheet'
 import { RoutineImage } from '../components/RoutineImage'
 import { Btn, Chip, Confetti, Sheet, Stepper, cx, spring } from '../components/ui'
 
@@ -49,7 +50,7 @@ export function SessionScreen() {
       <div className="relative z-10 flex flex-col h-full max-w-[520px] w-full mx-auto">
         {active.phase === 'intro' && <Intro a={active} />}
         {active.phase === 'warmup' && <Warmup a={active} steps={res.steps} kind={res.def.kind} past={past} />}
-        {active.phase === 'work' && <Work a={active} steps={res.steps} rir={res.mod.rir} modName={res.mod.name} past={past} prior={prior} loading={sessions === undefined} />}
+        {active.phase === 'work' && <Work a={active} kind={res.def.kind} steps={res.steps} rir={res.mod.rir} modName={res.mod.name} past={past} prior={prior} loading={sessions === undefined} />}
         {active.phase === 'cooldown' && <Cooldown />}
         {active.phase === 'finish' && <Finish a={active} steps={res.steps} onDone={() => open(null)} />}
       </div>
@@ -180,7 +181,7 @@ function Warmup({ a, steps, kind, past }: { a: Active; steps: Step[]; kind: stri
 }
 
 // ── Work ─────────────────────────────────────────────────────────────────────
-function Work({ a, steps, rir, modName, past, prior, loading }: { a: Active; steps: Step[]; rir: string; modName: string; past: Record<string, Past[]>; prior: SessionLog[]; loading: boolean }) {
+function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Active; kind: string; steps: Step[]; rir: string; modName: string; past: Record<string, Past[]>; prior: SessionLog[]; loading: boolean }) {
   const person = usePerson()
   const patch = useStore((s) => s.patchActive)
   const set = useStore((s) => s.set)
@@ -189,6 +190,7 @@ function Work({ a, steps, rir, modName, past, prior, loading }: { a: Active; ste
   const [swapOpen, setSwapOpen] = useState(false)
   const [rirOpen, setRirOpen] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [routine, setRoutine] = useState(false)
   const [detail, setDetail] = useState<string | null>('howTo')
   const [burst, setBurst] = useState(0)
   const idx = Math.min(a.idx, steps.length - 1)
@@ -255,7 +257,10 @@ function Work({ a, steps, rir, modName, past, prior, loading }: { a: Active; ste
     <>
       <Confetti fire={burst} />
       <Top title={a.title} sub={`${idx + 1} of ${steps.length} · ${modName} week`} right={
-        <button type="button" aria-label="Session options" onClick={() => setMenu(true)} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><X size={18} /></button>} />
+        <div className="flex gap-2">
+          <button type="button" aria-label="Warm-up and cool-down" data-testid="session-routine" onClick={() => setRoutine(true)} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Flame size={18} /></button>
+          <button type="button" aria-label="Session options" onClick={() => setMenu(true)} className="w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><X size={18} /></button>
+        </div>} />
       <div className="px-4 flex gap-1 shrink-0" role="progressbar" aria-label="Session progress" aria-valuenow={doneCount} aria-valuemin={0} aria-valuemax={steps.length}>
         {steps.map((s, i) => {
           const d = s.kind === 'lift' ? (a.sets[s.id] ?? []).length > 0 && (a.sets[s.id] ?? []).every((r) => r.done) : a.cardio[s.id]?.done
@@ -369,6 +374,7 @@ function Work({ a, steps, rir, modName, past, prior, loading }: { a: Active; ste
         <div className="flex justify-between text-[12px] text-mute mt-1"><span>8 reps done</span><span>2 left in reserve = RIR 2</span></div>
         <Btn className="w-full mt-5" onClick={() => { setRirOpen(false); set((s) => { s.flags.rir = true }) }}>Got it</Btn>
       </Sheet>
+      <RoutineSheet open={routine} initial="warm" dayKind={kind} onClose={() => setRoutine(false)} />
       <Sheet open={menu} onClose={() => setMenu(false)} title="Session">
         <div className="space-y-2">
           <Btn kind="soft" className="w-full" onClick={() => { setMenu(false); useStore.getState().open(null) }}><ChevronDown size={18} /> Minimise — keep it running</Btn>
