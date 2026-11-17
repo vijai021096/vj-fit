@@ -74,7 +74,7 @@ export function Sheet({ open, onClose, title, children, full }: { open: boolean;
   return (
     <AnimatePresence>
       {open && (
-        <motion.div className="fixed inset-0 z-[60] flex items-end" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+        <motion.div className="fixed inset-0 z-[60] flex items-end" initial={{ opacity: 0 }} animate={{ opacity: 1, pointerEvents: 'auto' }} exit={{ opacity: 0, pointerEvents: 'none' }}>
           <div className="absolute inset-0 bg-black/60" onClick={onClose} />
           <motion.div role="dialog" aria-modal="true" aria-label={title} initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={spring}
             className={cx('relative w-full max-w-[520px] mx-auto bg-s1 border-t border-line rounded-t-[28px] safe-b flex flex-col', full ? 'h-[92dvh]' : 'max-h-[86dvh]')}>

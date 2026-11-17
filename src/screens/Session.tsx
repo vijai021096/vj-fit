@@ -523,7 +523,9 @@ function Cooldown() {
         </div>
         <ol className="mt-4 space-y-1.5">{COOLDOWN.map((s, j) => <li key={s} className={cx('flex items-center gap-2 text-[14px]', j < i ? 'text-mute line-through' : j === i ? 'font-medium' : 'text-mute')}><span className={cx('w-5 h-5 rounded-full grid place-items-center text-[11px]', j < i ? 'accent-grad text-[#08080c]' : 'bg-s3')}>{j < i ? <Check size={12} /> : j + 1}</span>{s}</li>)}</ol>
       </div>
-      <div className="shrink-0 p-4 safe-b glass border-t border-line/60"><Btn className="w-full" onClick={() => patch((x) => { x.phase = 'finish' })}>{over ? 'See summary' : 'Skip to summary'} <ArrowRight size={18} /></Btn></div>
+      <div className="shrink-0 p-4 safe-b glass border-t border-line/60 flex gap-2">
+        <Btn kind="soft" label="Back to workout" onClick={() => patch((x) => { x.phase = 'work' })}><ArrowLeft size={18} /> Workout</Btn>
+        <Btn className="flex-1" onClick={() => patch((x) => { x.phase = 'finish' })}>{over ? 'See summary' : 'Skip to summary'} <ArrowRight size={18} /></Btn></div>
     </>
   )
 }
