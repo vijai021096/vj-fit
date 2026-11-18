@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Flame, Info, Pause, Play, Repeat, Share2, SkipForward, Star, Timer, Trash2, Trophy, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Flame, Info, Pause, Play, Plus, Repeat, Share2, SkipForward, Star, Timer, Trash2, Trophy, X } from 'lucide-react'
 import type { MuscleId, SessionLog, Step } from '../types'
 import { NAME } from '../types'
 import { useStore, usePerson, type Active } from '../store'
@@ -241,13 +241,15 @@ function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Activ
       const restFor = step.group && gi < group.length - 1 ? 0 : step.rest
       if (restFor > 0 && !last) {
         const nx = steps[next]
-        x.rest = { endsAt: Date.now() + restFor * 1000, total: restFor, label: next === idx ? `Set ${i + 2} of ${step.sets}` : `Next: ${nx.kind === 'lift' ? exName(nx.ex) : nx.label}` }
+        x.rest = { endsAt: Date.now() + restFor * 1000, total: restFor, label: next === idx ? `Set ${i + 2} of ${x.sets[step.id].length}` : `Next: ${nx.kind === 'lift' ? exName(nx.ex) : nx.label}` }
       }
       x.idx = next
     })
     if (turningOn) { chime('tick', sounds); if (pr) setBurst(Date.now()) }
   }
   const startHold = (i: number) => patch((x) => { const secs = x.sets[step.id][i].r; x.rest = { endsAt: Date.now() + secs * 1000, total: secs, label: 'Hold', hold: { step: step.id, set: i } } })
+  const addSet = () => patch((x) => { const cur = x.sets[step.id] ?? []; const l = cur[cur.length - 1]; x.sets[step.id] = [...cur, { w: l?.w ?? 0, r: l?.r ?? (step.hold ? 30 : 10), done: false }] })
+  const removeSet = () => patch((x) => { const cur = x.sets[step.id] ?? []; if (cur.length > 1 && !cur[cur.length - 1].done) x.sets[step.id] = cur.slice(0, -1) })
   const edit = (i: number, k: 'w' | 'r', v: number) => patch((x) => { x.sets[step.id][i][k] = v })
 
   const unit = ex?.loadType === 'assist' ? 'assist kg' : ex?.loadType === 'db' ? 'kg each' : 'kg'
@@ -346,6 +348,12 @@ function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Activ
                 </motion.div>
               )
             })}
+            {!loading && rows.length > 0 && (
+              <div className="flex gap-2 pt-0.5">
+                <button type="button" data-testid="add-set" onClick={addSet} className="flex-1 min-h-[44px] rounded-2xl border border-dashed border-line text-[14px] font-medium text-mute inline-flex items-center justify-center gap-1.5"><Plus size={16} /> Add set</button>
+                {rows.length > 1 && !rows[rows.length - 1].done && <button type="button" data-testid="remove-set" onClick={removeSet} className="min-h-[44px] px-4 rounded-2xl border border-line/60 text-[14px] text-mute">Remove set {rows.length}</button>}
+              </div>
+            )}
           </div>
         )}
         <div className="flex items-center gap-2 py-2">
