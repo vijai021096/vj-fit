@@ -3,7 +3,7 @@ import type { SessionLog } from '../types'
 import { deloadAdvice, stalledLifts } from './plateau'
 
 const mk = (date: string, w: number, r: number, ex = 'bb-bench-press'): SessionLog => ({
-  id: date + ex, person: 'vikas', date, key: 'mon', title: 't', cycle: 1, weekIndex: 1, startedAt: 1, finishedAt: 2,
+  id: date + ex, person: 'vijai', date, key: 'mon', title: 't', cycle: 1, weekIndex: 1, startedAt: 1, finishedAt: 2,
   sets: { s1: [{ w, r, done: true, t: 1 } as never] }, exOf: { s1: ex }, updatedAt: 1,
 })
 

@@ -1,4 +1,4 @@
-import type { Person } from '../types'
+import { isCut, type Person } from '../types'
 import type { WeightRow } from '../db'
 import { PROGRAMS } from '../engine/program'
 import type { DayStat, Summary } from './insights'
@@ -34,11 +34,11 @@ export function weeklyReview(person: Person, stats: DayStat[], sum: Summary, t: 
   if (sum.eatDays < 4) focus = 'Log your meals on at least 5 days. Everything else is a guess until you do.'
   else if (deloadAdvice(stalled).level === 'deload') focus = 'Several lifts have stalled together. Take one lighter week (about 90% of your weights).'
   else if (proteinDays < sum.eatDays * 0.6) focus = `Protein is the gap: you hit ${t.protein} g on only ${proteinDays} of ${sum.eatDays} days. Add one high-protein snack.`
-  else if (person === 'vikas' && gap < -150) focus = `You ate about ${Math.abs(gap)} kcal a day under target. Add a snack or bigger portions to keep the bulk moving.`
-  else if (person === 'varsha' && gap > 150) focus = `You ate about ${gap} kcal a day over target. Check portions and anything added outside the plan.`
+  else if (!isCut(person) && gap < -150) focus = `You ate about ${Math.abs(gap)} kcal a day under target. Add a snack or bigger portions to keep the bulk moving.`
+  else if (isCut(person) && gap > 150) focus = `You ate about ${gap} kcal a day over target. Check portions and anything added outside the plan.`
   else if (sum.workouts < planned * 0.7) focus = `${sum.workouts} of ${planned} workouts done. Protect the days you can: even a shorter session beats a skipped one.`
-  else if (person === 'vikas' && weightDelta != null && weightDelta <= 0 && sum.eatDays >= 5) focus = 'Weight is flat while you are bulking. Add about 150 kcal a day if it stays flat next week.'
-  else if (person === 'varsha' && weightDelta != null && weightDelta >= 0.3 && sum.eatDays >= 5) focus = 'Weight went up this week. One week is noise, so repeat it and check the trend before changing anything.'
+  else if (!isCut(person) && weightDelta != null && weightDelta <= 0 && sum.eatDays >= 5) focus = 'Weight is flat while you are bulking. Add about 150 kcal a day if it stays flat next week.'
+  else if (isCut(person) && weightDelta != null && weightDelta >= 0.3 && sum.eatDays >= 5) focus = 'Weight went up this week. One week is noise, so repeat it and check the trend before changing anything.'
   else focus = 'This was a solid week. Repeat it, and try to add a rep or a little weight on your first lift.'
   return { weightDelta, workouts: sum.workouts, planned, proteinDays, eatDays: sum.eatDays, avgEaten: sum.avgEaten, kcalTarget: t.kcal, focus }
 }

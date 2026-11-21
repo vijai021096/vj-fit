@@ -1,6 +1,10 @@
-export type Person = 'vikas' | 'varsha'
-export const PEOPLE: Person[] = ['vikas', 'varsha']
-export const NAME: Record<Person, string> = { vikas: 'Vikas', varsha: 'Varsha' }
+export type Person = 'vijai'
+export const PEOPLE: Person[] = ['vijai']
+export const NAME: Record<Person, string> = { vijai: 'Vijai' }
+/** Current phase. 'cut' = fat loss first (deficit); switch to 'bulk' once the waist is down. */
+export type Goal = 'cut' | 'bulk'
+export const GOAL: Record<Person, Goal> = { vijai: 'cut' }
+export const isCut = (p: Person) => GOAL[p] === 'cut'
 
 export type MuscleId =
   | 'upper-traps' | 'mid-traps-rhomboids' | 'front-delts' | 'side-delts' | 'rear-delts'
@@ -131,6 +135,10 @@ export interface SessionLog {
   updatedAt: number
 }
 
+/** nonveg = chicken, fish and eggs allowed; egg = eggs only; veg = no egg, no meat */
+export type Diet = 'nonveg' | 'egg' | 'veg'
+export const dietOf = (p: Pick<Profile, 'veg' | 'diet'>): Diet => p.diet ?? (p.veg ? 'veg' : 'nonveg')
+
 export interface Profile {
   heightCm: number
   weightKg: number
@@ -138,6 +146,11 @@ export interface Profile {
   sex: 'male' | 'female'
   gymTime: string
   veg: boolean
+  diet?: Diet
+  /** Goal numbers you set yourself (optional) */
+  goalWeightKg?: number
+  goalWaistCm?: number
+  goalDate?: string
   kcalAdjust: number
   /** Hide this person's body weight when the other person's phone views them. A courtesy, not a lock. */
   hideWeight?: boolean

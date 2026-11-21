@@ -19,7 +19,7 @@ export const WARMUP = {
 export const COOLDOWN = ['Doorway chest stretch', 'Lat stretch', 'Hip-flexor stretch', 'Hamstring stretch', 'Child’s pose']
 export const COOLDOWN_HOLD = 30
 
-/** File ids for the warm-up / cool-down pictures in /media/routine (id.webp, id-2.webp for the second pose, id.f.webp for Varsha). */
+/** File ids for the warm-up / cool-down pictures in /media/routine (id.webp, id-2.webp for the second pose). */
 export const ROUTINE_ID: Record<string, string> = {
   [WARMUP.general]: 'warm-bike',
   'Arm circles × 10': 'arm-circles', 'Band pull-aparts × 15': 'band-pull-aparts', 'Scap push-ups × 10': 'scap-push-ups',

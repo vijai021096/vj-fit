@@ -15,7 +15,6 @@ export const QUOTES: string[] = [
   'The weights don’t care about your mood. They’re wonderfully fair like that.',
   'A tiny workout still counts. A zero workout counts as a very comfy sofa.',
   'Be the reason your gym playlist finally gets used.',
-  'Vikas and Varsha, together we lift. Together we also snack, but later.',
   'Strong is built one boring, ordinary Tuesday at a time. Go and be boring.',
   'Excuses burn zero calories. Squats burn plenty. Do the maths.',
   'Your only competition is the version of you that stayed home. Beat him.',

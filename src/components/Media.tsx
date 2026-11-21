@@ -56,7 +56,7 @@ export function ExerciseThumb({ ex, person }: { ex: Exercise; person: Person }) 
   const [bad, setBad] = useState(false)
   useEffect(() => { let live = true; loadManifest().then((x) => { if (live) setM(x) }); return () => { live = false } }, [])
   const e = m?.[ex.id]
-  const src = (e ? (person === 'varsha' ? e.female ?? e.male : e.male ?? e.female)?.poster : undefined) ?? (m ? ex.media.fallback?.[0] : undefined)
+  const src = (e ? (e.male ?? e.female)?.poster : undefined) ?? (m ? ex.media.fallback?.[0] : undefined)
   if (!src || bad) return m ? <span className="text-[10px] text-mute text-center leading-tight">Demo<br />soon</span> : null
   return <img src={src} alt="" loading="lazy" onError={() => setBad(true)} className="w-full h-full object-cover" />
 }
@@ -71,7 +71,7 @@ export function ExerciseMedia({ ex, person, className }: { ex: Exercise; person:
   useEffect(() => {
     let live = true
     setBroken(false)
-    loadManifest().then((m) => { if (!live) return; const e = m[ex.id]; setHf(e ? (person === 'varsha' ? e.female ?? e.male : e.male ?? e.female) : undefined) })
+    loadManifest().then((m) => { if (!live) return; const e = m[ex.id]; setHf(e ? (e.male ?? e.female) : undefined) })
     return () => { live = false }
   }, [ex.id, person])
   const fb = ex.media.fallback

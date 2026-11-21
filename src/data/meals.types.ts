@@ -8,6 +8,8 @@ export interface MealOption {
   protein: number
   tag?: 'S' | 'N'
   egg?: boolean
+  /** Contains chicken, fish or meat */
+  meat?: boolean
   whey?: number
   /** Scalable carb at the base portion. min/max override the defaults in foods.ts. */
   carb?: { unit: CarbUnit; qty: number; min?: number; max?: number }

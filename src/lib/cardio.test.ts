@@ -3,8 +3,8 @@ import { cardioTotals, fmtDuration } from './cardio'
 import type { SessionLog } from '../types'
 import type { DayRow } from '../db'
 
-const sess = (date: string, cardio?: Record<string, number>) => ({ id: date, person: 'vikas', date, exOf: { '3': 'bike', '4': 'incline-walk' }, cardio } as unknown as SessionLog)
-const day = (date: string, cardio: DayRow['cardio']) => ({ id: date, person: 'vikas', date, eaten: {}, swaps: {}, water: 0, steps: 0, updatedAt: 1, cardio }) as DayRow
+const sess = (date: string, cardio?: Record<string, number>) => ({ id: date, person: 'vijai', date, exOf: { '3': 'bike', '4': 'incline-walk' }, cardio } as unknown as SessionLog)
+const day = (date: string, cardio: DayRow['cardio']) => ({ id: date, person: 'vijai', date, eaten: {}, swaps: {}, water: 0, steps: 0, updatedAt: 1, cardio }) as DayRow
 
 describe('cardio totals', () => {
   it('adds workout steps and stand-alone timers inside the range only', () => {

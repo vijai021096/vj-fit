@@ -1,4 +1,4 @@
-import type { Person, Profile } from '../types'
+import { dietOf, type Person, type Profile } from '../types'
 import { AISLES, CARBS, GROCERY, type Aisle } from '../data/foods'
 import { PLANS, dayMenu, optionById } from './rotation'
 import { scaleDay, targets, type Chosen } from './nutrition'
@@ -28,7 +28,7 @@ export function groceryList(
     const plan = PLANS[person]
     const target = targets(person, profile).kcal
     for (let d = 0; d < 7; d++) {
-      const menu = dayMenu(person, weekInMonth, d, profile.veg)
+      const menu = dayMenu(person, weekInMonth, d, dietOf(profile))
       const chosen: Chosen[] = plan.slots.map((s) => ({ slot: s.id, option: optionById(plan, menu[s.id])! }))
       const scaled = scaleDay(chosen, target)
       for (const c of chosen) {

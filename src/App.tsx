@@ -3,7 +3,7 @@ import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
 import { BookOpen, CalendarDays, Home, LineChart, Salad, Settings as Cog } from 'lucide-react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { useStore, type Tab } from './store'
-import { NAME, PEOPLE, type Person } from './types'
+import type { Person } from './types'
 import { Btn, Sheet, Skeletons, cx, spring } from './components/ui'
 import { Onboarding, ProfileForm, InstallGuide } from './screens/Onboarding'
 import { Today } from './screens/Today'
@@ -37,8 +37,6 @@ export default function App() {
   const sync = useSync()
   const overlay = useStore((s) => s.overlay)
   const toast = useStore((s) => s.toast)
-  const me = useStore((s) => s.me)
-  const [askLater, setAskLater] = useState(false)
   const [meal, setMeal] = useState<{ slot: string; date: string; person: Person } | null>(null)
   const { setTab, open, setPerson } = useStore.getState()
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
@@ -54,12 +52,11 @@ export default function App() {
     apply(); mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
   }, [theme])
-  useEffect(() => { document.documentElement.dataset.person = person ?? 'vikas'; if (person) void maybeAdjust(person) }, [person])
-  // Open on your own profile every time the app starts (the other one is a tap away).
-  useEffect(() => { const m = useStore.getState().me; if (m && useStore.getState().profiles[m].onboarded) setPerson(m) }, []) // eslint-disable-line
+  useEffect(() => { document.documentElement.dataset.person = person ?? 'vijai'; if (person) void maybeAdjust(person) }, [person])
+  useEffect(() => { if (!useStore.getState().person) setPerson('vijai') }, []) // eslint-disable-line
   // Reminder taps: "Ate it" arrives as a message; a plain tap (iPhone) arrives as a message or as ?meal= in the address.
   useEffect(() => {
-    const ok = (d: { slot?: string; date?: string; person?: string }) => !!d.slot && /^\d{4}-\d{2}-\d{2}$/.test(d.date ?? '') && (d.person === 'vikas' || d.person === 'varsha')
+    const ok = (d: { slot?: string; date?: string; person?: string }) => !!d.slot && /^\d{4}-\d{2}-\d{2}$/.test(d.date ?? '') && d.person === 'vijai'
     const q = new URLSearchParams(location.search)
     const first = { slot: q.get('meal') ?? undefined, date: q.get('date') ?? undefined, person: q.get('p') ?? undefined }
     if (ok(first)) { setMeal(first as { slot: string; date: string; person: Person }); history.replaceState(null, '', location.pathname) }
@@ -88,25 +85,11 @@ export default function App() {
             <div className="contents" {...(full ? ({ inert: '' } as object) : {})}>
             <header className="safe-t shrink-0 glass border-b border-line/50 z-20">
               <div className="flex items-center gap-2 px-4 h-14">
-                <div className="display text-[22px] font-bold accent-grad-text select-none" aria-label="V squared Fit">V²</div>
-                <div className="flex-1 flex justify-center">
-                  <div className="inline-flex p-1 rounded-full bg-s2 border border-line/70" role="tablist" aria-label="Who's training">
-                    {PEOPLE.map((p: Person) => (
-                      <button key={p} type="button" role="tab" aria-selected={person === p} onClick={() => (profiles[p].onboarded ? setPerson(p) : open({ type: 'profile', person: p }))}
-                        className={cx('relative px-4 min-h-[40px] rounded-full text-[14px] font-semibold', person === p ? 'text-[#08080c]' : 'text-mute')}>
-                        {person === p && <motion.span layoutId="who" className="absolute inset-0 rounded-full accent-grad" transition={spring} />}
-                        <span className="relative">{NAME[p]}</span>
-                      </button>))}
-                  </div>
-                </div>
+                <div className="display text-[22px] font-bold accent-grad-text select-none" aria-label="VJ Fit">VJ</div>
+                <div className="flex-1 text-[15px] font-semibold text-mute">Fat loss · muscle</div>
                 <button type="button" aria-label="Settings" onClick={() => open({ type: 'settings' })} className="relative w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Cog size={18} />{sync.linked && <span data-testid="sync-dot" data-state={sync.state} className={cx('absolute top-2 right-2 w-2.5 h-2.5 rounded-full border border-bg', sync.state === 'idle' ? 'bg-ok' : sync.state === 'syncing' ? 'bg-a1 animate-pulse' : 'bg-warn')} />}</button>
               </div>
             </header>
-            {me && person && person !== me && (
-              <div className="shrink-0 px-4 py-2 flex items-center gap-3 bg-s2 border-b border-line/50 text-[13px]" data-testid="viewing-banner">
-                <span className="flex-1">Viewing <b>{NAME[person]}</b>. Anything you log goes on {NAME[person]}’s record.</span>
-                <button type="button" onClick={() => setPerson(me)} className="min-h-[36px] px-3 rounded-xl accent-grad text-[#08080c] font-semibold">Back to mine</button>
-              </div>)}
             <main className="flex-1 overflow-y-auto no-scrollbar" id="main">
               <AnimatePresence mode="wait">
                 <motion.div key={tab + person} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }} className="px-4 pt-4 pb-8">
@@ -140,10 +123,6 @@ export default function App() {
               {overlay?.type === 'review' && <Review key="review" />}
               {overlay?.type === 'profile' && <ProfileForm key="profile" person={overlay.person} sheet />}
             </Suspense>
-            <Sheet open={!me && !askLater && !overlay && !!ready && (standalone || flags.install)} onClose={() => setAskLater(true)} title="Whose phone is this?">
-              <p className="text-[14px] text-mute mb-4">The app opens on your profile and flags when you’re looking at the other one, so nothing gets logged on the wrong person. Both of you still see everything.</p>
-              <div className="grid grid-cols-2 gap-3">{PEOPLE.map((p) => <Btn key={p} kind={p === 'vikas' ? 'primary' : 'soft'} onClick={() => { useStore.getState().set((x) => { x.me = p }); setPerson(p) }}>I’m {NAME[p]}</Btn>)}</div>
-            </Sheet>
             <Sheet open={!!meal} onClose={() => setMeal(null)} title={meal ? `${PLANS[meal.person].slots.find((x) => x.id === meal.slot)?.label ?? 'Meal'}: did you eat it?` : ''}>
               <div className="grid grid-cols-2 gap-3 pb-2" data-testid="meal-prompt">
                 <Btn kind="primary" onClick={() => { if (meal) { void patchDay(meal.person, meal.date, (x) => { x.eaten[meal.slot] = true }); useStore.getState().say('Meal logged') } setMeal(null) }}>Ate it</Btn>

@@ -14,13 +14,11 @@
   transition: --a1c 0.6s ease, --a2c 0.6s ease, --atc 0.6s ease;
   color-scheme: dark;
 }
-:root[data-person='varsha'] { --a1c: #ff6b9a; --a2c: #c77dff; --atc: #ff9dbb; --a1: 255 107 154; --a2: 199 125 255; }
 :root.light {
   --bg: 244 244 248; --s1: 255 255 255; --s2: 237 237 243; --s3: 222 222 232; --line: 214 214 226;
   --ink: 14 14 20; --mute: 84 84 104; --ok: 21 128 61; --warn: 161 98 7; --atc: #1d4ed8;
   color-scheme: light;
 }
-:root.light[data-person='varsha'] { --atc: #be185d; }
 
 html, body, #root { height: 100%; }
 /* Behave like a native app: no pinch/double-tap zoom, no rubber-band, no text-selection callouts. */

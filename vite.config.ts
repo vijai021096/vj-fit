@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['icons/*.png', 'icons/*.svg'],
       manifest: {
-        name: 'V² Fit',
-        short_name: 'V²',
-        description: "Vikas & Varsha's gym companion",
+        name: 'VJ Fit',
+        short_name: 'VJ Fit',
+        description: "Vijai's fat-loss & muscle companion",
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

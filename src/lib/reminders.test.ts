@@ -7,9 +7,9 @@ const st = { programStart: '2026-11-15', mergeDay0: false }
 
 describe('reminders and skipped days', () => {
   it('drops the gym nudge on a day marked not going, keeps meals', () => {
-    const all = buildItems('vikas', '2026-11-16', st, prof)
+    const all = buildItems('vijai', '2026-11-16', st, prof)
     const gymDate = all.find((i) => i.title === 'Gym in 15 minutes')!.date
-    const cut = buildItems('vikas', '2026-11-16', st, prof, {}, new Set([gymDate]))
+    const cut = buildItems('vijai', '2026-11-16', st, prof, {}, new Set([gymDate]))
     expect(cut.some((i) => i.date === gymDate && i.title === 'Gym in 15 minutes')).toBe(false)
     expect(cut.some((i) => i.date === gymDate && !!i.slot)).toBe(true)
     expect(cut.length).toBe(all.length - 1)
@@ -18,10 +18,10 @@ describe('reminders and skipped days', () => {
 
 describe('reminders', () => {
   it('builds a week of meals, gym nudges and water prompts, sorted', () => {
-    const items = buildItems('vikas', '2026-11-16', st, prof)
+    const items = buildItems('vijai', '2026-11-16', st, prof)
     expect(new Set(items.map((i) => i.date)).size).toBe(7)
     expect(items.length).toBeLessThan(200)                // the server rejects more than 200 a week
-    expect(buildItems('varsha', '2026-11-16', st, prof).length).toBeLessThan(200)
+    expect(buildItems('vijai', '2026-11-16', st, prof).length).toBeLessThan(200)
     expect(items.filter((i) => i.title === 'Drink some water').length).toBe(84)
     const q = items.filter((i) => i.title.startsWith('Gym o'))
     expect(q.length).toBe(7)
@@ -35,6 +35,6 @@ describe('reminders', () => {
     expect(items.every((i) => i.title && i.at >= 0 && i.at < 1440)).toBe(true)
   })
   it('sends nothing before the program starts', () => {
-    expect(buildItems('vikas', '2026-11-01', st, prof).filter((i) => i.date < '2026-11-15')).toEqual([])
+    expect(buildItems('vijai', '2026-11-01', st, prof).filter((i) => i.date < '2026-11-15')).toEqual([])
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { addDays, dateOf, istDate, position, programEnd, week1Start, weekdayOf } from './calendar'
 import { suggest, rampSets, isPR } from './progression'
-import { autoAdjust, bmr, carbLabel, mealTimes, scaleDay, targets, VARSHA_FLOOR, weeklyTrend } from './nutrition'
+import { autoAdjust, bmr, carbLabel, mealTimes, scaleDay, targets, CUT_FLOOR, weeklyTrend } from './nutrition'
 import { PLANS, dayMenu, enforceWheyCap, optionById, slotSequence, swapOptions, wheyScoops } from './rotation'
 import { groceryList } from './grocery'
 import { modSets, resolveDay0, resolveSession, weekMod } from './program'
@@ -56,38 +56,26 @@ describe('program', () => {
     expect(modSets(3, true, weekMod(1, 3))).toBe(4)
     expect(modSets(3, false, weekMod(1, 4))).toBe(3)
   })
-  it('Mon 16 Nov: Vikas Upper A / Varsha Upper A at Learn values', () => {
-    const v = resolveSession('vikas', 1, 'mon')
+  it('Mon: Upper A at Learn values with a fat-loss finisher', () => {
+    const v = resolveSession('vijai', 1, 'mon')
     expect(v.def.title).toBe('Upper A'); expect(v.mod.name).toBe('Learn')
-    expect(v.steps[0]).toMatchObject({ ex: 'bb-bench-press', sets: 2, reps: [6, 8] })
-    expect(v.steps.find((s) => s.ex === 'cable-triceps-pushdown')!.sets).toBe(2)
-    const r = resolveSession('varsha', 1, 'mon')
-    expect(r.def.title).toBe('Upper A')
-    expect(r.steps[0]).toMatchObject({ ex: 'lat-pulldown', sets: 2 })
-    expect(r.steps.filter((s) => s.group === 'A').map((s) => s.label)).toEqual(['A1', 'A2'])
+    expect(v.steps[0]).toMatchObject({ ex: 'bb-bench-press', reps: [6, 8] })
+    expect(v.steps[v.steps.length - 1]).toMatchObject({ kind: 'cardio', ex: 'incline-walk', minutes: 15 })
+    expect(resolveSession('vijai', 3, 'mon').steps.slice(-1)[0].minutes).toBe(20)
+    expect(resolveSession('vijai', 1, 'wed').steps.filter((s) => s.group === 'A').map((s) => s.label)).toEqual(['A1', 'A2'])
   })
-  it('Vikas squat is gated behind trainer approval; month swaps apply', () => {
-    expect(resolveSession('vikas', 1, 'tue').steps[0].ex).toBe('goblet-squat')
-    expect(resolveSession('vikas', 1, 'tue', { squatApproved: true }).steps[0].ex).toBe('back-squat')
-    const m2 = resolveSession('vikas', 5, 'mon').steps.map((s) => s.ex)
-    expect(m2).toContain('incline-smith-press'); expect(m2).toContain('neutral-grip-pulldown'); expect(m2).not.toContain('lat-pulldown')
-    const m3 = resolveSession('vikas', 11, 'tue', { squatApproved: true }).steps
-    expect(m3[0]).toMatchObject({ ex: 'trap-bar-deadlift', sets: 3, reps: [5, 5] })
-    expect(m3[1]).toMatchObject({ ex: 'back-squat', sets: 5, reps: [5, 6] })
-    expect(m3.find((s) => s.ex === 'bb-romanian-deadlift')).toMatchObject({ sets: 3, reps: [8, 10] })
-  })
-  it('Varsha interval rounds and Zone-2 minutes follow the week', () => {
-    const iv = (w: number) => resolveSession('varsha', w, 'fri').steps.find((s) => s.intervals)!.intervals!.rounds
-    expect([iv(1), iv(2), iv(3), iv(4)]).toEqual([5, 6, 8, 8])
-    expect(resolveSession('varsha', 3, 'wed').steps[0].minutes).toBe(34)
-    expect(resolveSession('varsha', 9, 'wed').steps[0].minutes).toBe(40)
-    expect(resolveSession('varsha', 9, 'fri').steps[0].rounds).toBe(4)
+  it('month swaps apply', () => {
+    expect(resolveSession('vijai', 1, 'tue').steps[0].ex).toBe('back-squat')
+    const m2 = resolveSession('vijai', 5, 'mon').steps.map((s) => s.ex)
+    expect(m2).toContain('neutral-grip-pulldown'); expect(m2).not.toContain('lat-pulldown')
+    const m3 = resolveSession('vijai', 11, 'thu').steps
+    expect(m3[0]).toMatchObject({ ex: 'trap-bar-deadlift', reps: [5, 5] })
   })
   it('every programmed exercise exists in the library', () => {
-    for (const person of ['vikas', 'varsha'] as const)
+    for (const person of ['vijai'] as const)
       for (let w = 1; w <= 12; w++) for (const d of ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const)
         for (const s of resolveSession(person, w, d, { squatApproved: w > 6 }).steps) if (s.kind !== 'mobility') expect(EX[s.ex], s.ex).toBeTruthy()
-    for (const s of [...resolveDay0('vikas').steps, ...resolveDay0('varsha').steps]) expect(EX[s.ex]).toBeTruthy()
+    for (const s of resolveDay0('vijai').steps) expect(EX[s.ex]).toBeTruthy()
     Object.values(EX).forEach((e) => e.alternatives.forEach((a) => expect(EX[a], `${e.id} → ${a}`).toBeTruthy()))
   })
 })
@@ -129,32 +117,25 @@ describe('double progression', () => {
 })
 
 describe('nutrition', () => {
-  it('Mifflin-St Jeor and targets', () => {
+  it('Mifflin-St Jeor and cut targets', () => {
     expect(bmr(prof({}))).toBeCloseTo(1708.75)
-    const v = targets('vikas', prof({}))
-    expect(v.kcal).toBe(Math.round(1708.75 * 1.55 + 300))
-    expect(v.protein).toBe(Math.round(1.9 * 75))
+    const me = prof({ weightKg: 86, heightCm: 175, age: 34 })
+    const v = targets('vijai', me)
+    expect(v.kcal).toBe(Math.round(bmr(me) * 1.45 - 550))
+    expect(v.kcal).toBeGreaterThan(1950); expect(v.kcal).toBeLessThan(2150)
+    expect(v.protein).toBe(Math.round(1.9 * 86))
     expect(v.fat).toBe(Math.round((v.kcal * 0.25) / 9))
-    const f = prof({ sex: 'female', weightKg: 65, heightCm: 160, age: 27 })
-    expect(bmr(f)).toBeCloseTo(1354)
-    expect(targets('varsha', f).kcal).toBe(Math.round(1354 * 1.55 - 450))
   })
-  it('Varsha never goes below the 1,350 kcal floor', () => {
-    const small = prof({ sex: 'female', weightKg: 48, heightCm: 150, age: 40 })
-    const t = targets('varsha', small)
-    expect(t.kcal).toBe(VARSHA_FLOOR); expect(t.floored).toBe(true)
-    expect(targets('varsha', prof({ sex: 'female', weightKg: 65, heightCm: 160, age: 27, kcalAdjust: -900 })).kcal).toBe(VARSHA_FLOOR)
+  it('never goes below the 1,800 kcal floor', () => {
+    expect(targets('vijai', prof({ weightKg: 86, heightCm: 175, age: 34, kcalAdjust: -900 })).kcal).toBe(CUT_FLOOR)
   })
-  it('auto-adjust rules', () => {
-    expect(autoAdjust('vikas', 0.1, 2900).delta).toBe(150)
-    expect(autoAdjust('vikas', 0.6, 2900).delta).toBe(-150)
-    expect(autoAdjust('vikas', 0.3, 2900).delta).toBe(0)
-    expect(autoAdjust('varsha', -0.1, 1650, 0.9).delta).toBe(-100)
-    expect(autoAdjust('varsha', -0.1, 1650, 0.5).delta).toBe(0)
-    expect(autoAdjust('varsha', -0.1, 1400, 0.9).delta).toBe(-50)
-    expect(autoAdjust('varsha', -0.1, 1350, 0.9).delta).toBe(0)
-    expect(autoAdjust('varsha', -0.8, 1650).delta).toBe(100)
-    expect(autoAdjust('varsha', -0.4, 1650).delta).toBe(0)
+  it('auto-adjust rules (cut)', () => {
+    expect(autoAdjust('vijai', -0.1, 2050, 0.9).delta).toBe(-100)
+    expect(autoAdjust('vijai', -0.1, 2050, 0.5).delta).toBe(0)
+    expect(autoAdjust('vijai', -0.1, 1850, 0.9).delta).toBe(-50)
+    expect(autoAdjust('vijai', -0.1, 1800, 0.9).delta).toBe(0)
+    expect(autoAdjust('vijai', -1.2, 2050).delta).toBe(100)
+    expect(autoAdjust('vijai', -0.5, 2050).delta).toBe(0)
   })
   it('trend needs enough data', () => {
     expect(weeklyTrend([{ date: '2026-11-20', kg: 75 }], '2026-11-30')).toBeNull()
@@ -162,7 +143,7 @@ describe('nutrition', () => {
     expect(weeklyTrend(pts, '2026-12-06')!).toBeCloseTo(0.35, 2)
   })
   it('only carbs scale, within bounds, toward the target', () => {
-    const plan = PLANS.vikas
+    const plan = PLANS.vijai
     const chosen = plan.slots.map((s) => ({ slot: s.id, option: s.options[0] }))
     const base = chosen.reduce((s, c) => s + c.option.kcal, 0)
     const lower = scaleDay(chosen, base - 300)
@@ -170,11 +151,11 @@ describe('nutrition', () => {
     expect(Math.abs(lower.totalKcal - (base - 300))).toBeLessThanOrEqual(60)
     expect(lower.totalProtein).toBeLessThanOrEqual(chosen.reduce((s, c) => s + c.option.protein, 0))
     const way = scaleDay(chosen, 500)
-    expect(way.qty.lunch).toBe(0.5); expect(way.qty.dinner).toBe(1)
+    expect(way.qty.lunch).toBe(1); expect(way.qty.dinner).toBe(0)
     expect(carbLabel('rice', 1.5)).toBe('1½ cups rice'); expect(carbLabel('roti', 3)).toBe('3 roti'); expect(carbLabel('rice', 0.75)).toBe('¾ cup rice')
   })
   it('meal timeline brackets the workout for morning and evening', () => {
-    const slots = PLANS.vikas.slots.map((s) => s.id)
+    const slots = PLANS.vijai.slots.map((s) => s.id)
     for (const g of ['06:30', '18:30']) {
       const t = mealTimes(slots, g)
       const gm = Number(g.slice(0, 2)) * 60 + 30
@@ -186,32 +167,31 @@ describe('nutrition', () => {
 
 describe('rotation', () => {
   it('is deterministic', () => {
-    expect(dayMenu('vikas', 2, 3)).toEqual(dayMenu('vikas', 2, 3))
-    expect(dayMenu('vikas', 1, 0)).not.toEqual(dayMenu('varsha', 1, 0))
+    expect(dayMenu('vijai', 2, 3)).toEqual(dayMenu('vijai', 2, 3))
   })
   it('never repeats lunch or dinner on consecutive days (incl. across weeks and the 4-week wrap)', () => {
-    for (const person of ['vikas', 'varsha'] as const) for (const veg of [false, true]) for (const slot of ['lunch', 'dinner'] as const) {
+    for (const person of ['vijai'] as const) for (const veg of [false, true]) for (const slot of ['lunch', 'dinner'] as const) {
       const days = [...Array(29)].map((_, d) => dayMenu(person, (Math.floor(d / 7) % 4) + 1, d % 7, veg)[slot])
       for (let i = 1; i < days.length; i++) expect(days[i], `${person} ${slot} day ${i}`).not.toBe(days[i - 1])
     }
   })
   it('each week gets a different menu and themes are preferred', () => {
-    const wk = (w: number) => [...Array(7)].map((_, d) => dayMenu('vikas', w, d).lunch).join()
+    const wk = (w: number) => [...Array(7)].map((_, d) => dayMenu('vijai', w, d).lunch).join()
     expect(new Set([wk(1), wk(2), wk(3), wk(4)]).size).toBe(4)
-    const lunch = PLANS.vikas.slots.find((s) => s.id === 'lunch')!
-    const seq = slotSequence('vikas', lunch)
-    const south = seq.slice(7, 14).filter((id) => optionById(PLANS.vikas, id)!.tag === 'S').length
-    const southW3 = seq.slice(14, 21).filter((id) => optionById(PLANS.vikas, id)!.tag === 'S').length
+    const lunch = PLANS.vijai.slots.find((s) => s.id === 'lunch')!
+    const seq = slotSequence('vijai', lunch)
+    const south = seq.slice(7, 14).filter((id) => optionById(PLANS.vijai, id)!.tag === 'S').length
+    const southW3 = seq.slice(14, 21).filter((id) => optionById(PLANS.vijai, id)!.tag === 'S').length
     expect(south).toBeGreaterThan(southW3)
   })
-  it('vegetarian mode removes egg meals', () => {
+  it('egg mode removes chicken and fish meals', () => {
     for (let d = 0; d < 28; d++) {
-      const m = dayMenu('vikas', Math.floor(d / 7) + 1, d % 7, true)
-      Object.values(m).forEach((id) => expect(optionById(PLANS.vikas, id)!.egg).toBeFalsy())
+      const m = dayMenu('vijai', Math.floor(d / 7) + 1, d % 7, 'egg')
+      for (const slot of ['breakfast', 'lunch', 'post'] as const) expect(optionById(PLANS.vijai, m[slot])!.meat).toBeFalsy()
     }
   })
   it('whey cap: never more than 2 scoops a day', () => {
-    for (const person of ['vikas', 'varsha'] as const) for (let d = 0; d < 28; d++)
+    for (const person of ['vijai'] as const) for (let d = 0; d < 28; d++)
       expect(wheyScoops(dayMenu(person, Math.floor(d / 7) + 1, d % 7), PLANS[person])).toBeLessThanOrEqual(2)
     const plan: MealPlan = { tips: [], slots: (['breakfast', 'mid', 'post', 'bed'] as const).map((id) => ({ id, label: id, options: [
       { id: `${id}-w`, name: 'whey', kcal: 120, protein: 24, whey: 1, g: '' }, { id: `${id}-x`, name: 'other', kcal: 150, protein: 12, g: '' }] })) }
@@ -221,21 +201,18 @@ describe('rotation', () => {
     expect(capped).toEqual({ breakfast: 'breakfast-w', mid: 'mid-w', post: 'post-x', bed: 'bed-x' })
   })
   it('swap stays within ±15% kcal and ±5 g protein when possible', () => {
-    const lunch = PLANS.vikas.slots.find((s) => s.id === 'lunch')!
-    const { strict } = swapOptions(lunch, 'v-l2')
+    const lunch = PLANS.vijai.slots.find((s) => s.id === 'lunch')!
+    const { strict } = swapOptions(lunch, 'j-l1')
     expect(strict.length).toBeGreaterThan(0)
-    strict.forEach((o) => { expect(Math.abs(o.kcal - 850)).toBeLessThanOrEqual(0.15 * 850); expect(Math.abs(o.protein - 40)).toBeLessThanOrEqual(5) })
+    strict.forEach((o) => { expect(Math.abs(o.kcal - 590)).toBeLessThanOrEqual(0.15 * 590); expect(Math.abs(o.protein - 60)).toBeLessThanOrEqual(5) })
   })
 })
 
 describe('grocery', () => {
-  it('builds a combined, aisle-grouped household list', () => {
-    const list = groceryList(1, [{ person: 'vikas', profile: prof({}) }, { person: 'varsha', profile: prof({ sex: 'female', weightKg: 65, heightCm: 160, age: 27 }) }], { creatine: true })
+  it('builds an aisle-grouped list with chicken and eggs', () => {
+    const list = groceryList(1, [{ person: 'vijai', profile: prof({ weightKg: 86, age: 34 }) }], { creatine: true })
     const aisles = list.map((g) => g.aisle)
-    expect(aisles).toContain('Dairy'); expect(aisles).toContain('Supplements')
-    const eggs = list.find((g) => g.aisle === 'Eggs')!.items[0]
-    expect(eggs.qty).toBeGreaterThan(10)
-    const veg = groceryList(1, [{ person: 'vikas', profile: prof({ veg: true }) }])
-    expect(veg.find((g) => g.aisle === 'Eggs')).toBeUndefined()
+    expect(aisles).toContain('Meat & Fish'); expect(aisles).toContain('Supplements')
+    expect(list.find((g) => g.aisle === 'Eggs')!.items[0].qty).toBeGreaterThan(10)
   })
 })

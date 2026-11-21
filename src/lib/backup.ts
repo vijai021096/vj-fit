@@ -21,7 +21,7 @@ export async function downloadBackup(withPhotos = false) {
   const name = `v2fit-backup-${new Date().toISOString().slice(0, 10)}.json`
   const file = new File([blob], name, { type: 'application/json' })
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
-  if (nav.canShare?.({ files: [file] })) { try { await nav.share({ files: [file], title: 'V² Fit backup' }); mark(); return } catch { /* fall through to download */ } }
+  if (nav.canShare?.({ files: [file] })) { try { await nav.share({ files: [file], title: 'VJ Fit backup' }); mark(); return } catch { /* fall through to download */ } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000)
   mark()
 }
@@ -30,7 +30,7 @@ const mark = () => useStore.getState().set((s) => { s.flags.lastBackup = Date.no
 /** replace: wipe and load. merge: keep both, newest `updatedAt` wins per record — lets two phones share logs. */
 export async function importAll(text: string, mode: 'replace' | 'merge'): Promise<string> {
   const data = JSON.parse(text)
-  if (data?.app !== 'v2fit' || !data.db) throw new Error('This file is not a V² Fit backup.')
+  if (data?.app !== 'v2fit' || !data.db) throw new Error('This file is not a VJ Fit backup.')
   const tables = ['sessions', 'weights', 'measures', 'days'] as const
   let n = 0
   await db.transaction('rw', [db.sessions, db.weights, db.measures, db.days, db.photos], async () => {

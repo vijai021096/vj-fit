@@ -46,4 +46,3 @@ export function volumeOf(s: Pick<SessionLog, 'sets'>): number {
   Object.values(s.sets).forEach((sets) => sets.forEach((x) => { if (x.done) v += x.w * x.r }))
   return Math.round(v)
 }
-export const otherPerson = (p: Person): Person => (p === 'vikas' ? 'varsha' : 'vikas')

@@ -1,9 +1,8 @@
-import type { Person } from '../types'
+import type { Diet, Person } from '../types'
 import type { MealOption, MealPlan, SlotDef, SlotId } from '../data/meals.types'
-import { vikasMeals } from '../data/meals.vikas'
-import { varshaMeals } from '../data/meals.varsha'
+import { vijaiMeals } from '../data/meals.vijai'
 
-export const DEFAULT_PLANS: Record<Person, MealPlan> = { vikas: vikasMeals, varsha: varshaMeals }
+export const DEFAULT_PLANS: Record<Person, MealPlan> = { vijai: vijaiMeals }
 /** The meal plan in use — the coach's, or your edited copy (see lib/content.ts). */
 export const PLANS: Record<Person, MealPlan> = { ...DEFAULT_PLANS }
 export const WEEK_THEMES = ['Classic', 'South Indian', 'North Indian', 'Mix'] as const
@@ -16,10 +15,16 @@ function hash(s: string): number {
   return h >>> 0
 }
 const themeMatch = (o: MealOption, week: number) => (week === 1 ? !o.tag : week === 2 ? o.tag === 'S' : week === 3 ? o.tag === 'N' : true)
-export const allowed = (slot: SlotDef, veg: boolean) => { const p = slot.options.filter((o) => !veg || !o.egg); return p.length ? p : slot.options }
+type DietArg = Diet | boolean
+const norm = (d: DietArg): Diet => (d === true ? 'veg' : d === false ? 'nonveg' : d)
+export const allowed = (slot: SlotDef, diet: DietArg) => {
+  const d = norm(diet)
+  const p = slot.options.filter((o) => (d === 'nonveg' ? true : d === 'egg' ? !o.meat : !o.meat && !o.egg))
+  return p.length ? p : slot.options
+}
 
 /** 28-day sequence for one slot. Deterministic; never the same option on consecutive days when ≥ 2 options exist. */
-export function slotSequence(person: Person, slot: SlotDef, veg = false): string[] {
+export function slotSequence(person: Person, slot: SlotDef, veg: DietArg = 'nonveg'): string[] {
   const pool = allowed(slot, veg)
   const seq: string[] = []
   for (let d = 0; d < 28; d++) {
@@ -39,8 +44,8 @@ export function slotSequence(person: Person, slot: SlotDef, veg = false): string
 
 const cache = new Map<string, Record<string, string[]>>()
 export const clearRotationCache = () => cache.clear()
-function sequences(person: Person, veg: boolean, plan: MealPlan = PLANS[person]) {
-  const key = `${person}|${veg}|${plan === PLANS[person] ? 'std' : 'custom'}`
+function sequences(person: Person, veg: DietArg, plan: MealPlan = PLANS[person]) {
+  const key = `${person}|${norm(veg)}|${plan === PLANS[person] ? 'std' : 'custom'}`
   if (plan !== PLANS[person]) return Object.fromEntries(plan.slots.map((s) => [s.id, slotSequence(person, s, veg)]))
   if (!cache.has(key)) cache.set(key, Object.fromEntries(plan.slots.map((s) => [s.id, slotSequence(person, s, veg)])))
   return cache.get(key)!
@@ -51,7 +56,7 @@ export const optionById = (plan: MealPlan, id: string): MealOption | undefined =
 }
 
 /** Max 2 scoops of whey per day: later whey meals are auto-swapped to the closest non-whey option. */
-export function enforceWheyCap(picks: Record<string, string>, plan: MealPlan, veg = false, cap = WHEY_CAP): Record<string, string> {
+export function enforceWheyCap(picks: Record<string, string>, plan: MealPlan, veg: DietArg = 'nonveg', cap = WHEY_CAP): Record<string, string> {
   const out = { ...picks }
   const scoops = () => plan.slots.reduce((s, sl) => s + (optionById(plan, out[sl.id])?.whey ?? 0), 0)
   for (let i = plan.slots.length - 1; i >= 0 && scoops() > cap; i--) {
@@ -65,7 +70,7 @@ export function enforceWheyCap(picks: Record<string, string>, plan: MealPlan, ve
 }
 
 /** The day's menu. weekInMonth 1–4, dayIdx 0 = Monday. */
-export function dayMenu(person: Person, weekInMonth: number, dayIdx: number, veg = false, plan: MealPlan = PLANS[person]): Record<SlotId, string> {
+export function dayMenu(person: Person, weekInMonth: number, dayIdx: number, veg: DietArg = 'nonveg', plan: MealPlan = PLANS[person]): Record<SlotId, string> {
   const seqs = sequences(person, veg, plan)
   const d = (weekInMonth - 1) * 7 + dayIdx
   const picks: Record<string, string> = {}
@@ -74,7 +79,7 @@ export function dayMenu(person: Person, weekInMonth: number, dayIdx: number, veg
 }
 
 /** Swap candidates from the same slot: within ±15% kcal and ±5 g protein; nearest first. */
-export function swapOptions(slot: SlotDef, currentId: string, veg = false): { strict: MealOption[]; loose: MealOption[] } {
+export function swapOptions(slot: SlotDef, currentId: string, veg: DietArg = 'nonveg'): { strict: MealOption[]; loose: MealOption[] } {
   const cur = slot.options.find((o) => o.id === currentId)
   const pool = allowed(slot, veg).filter((o) => o.id !== currentId)
   if (!cur) return { strict: [], loose: pool }

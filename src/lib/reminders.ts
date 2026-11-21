@@ -1,6 +1,6 @@
 import { useStore } from '../store'
 import type { Person } from '../types'
-import { WEEKDAYS } from '../types'
+import { WEEKDAYS, dietOf } from '../types'
 import { addDays, position } from '../engine/calendar'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
 import { fmtMin, mealName, mealTimes, scaleDay, targets, waterTarget } from '../engine/nutrition'
@@ -25,7 +25,7 @@ export function buildItems(person: Person, today: string, st: { programStart: st
     if (pos.phase === 'before') continue
     const wIdx = pos.phase === 'program' ? pos.weekInMonth : 1
     const dIdx = pos.phase === 'program' ? WEEKDAYS.indexOf(pos.weekday) : 6
-    const base = dayMenu(person, wIdx, dIdx, profile.veg)
+    const base = dayMenu(person, wIdx, dIdx, dietOf(profile))
     const picks = { ...base, ...(swapsByDate[date] ?? {}) }
     const chosen = plan.slots.map((s) => ({ slot: s.id, option: optionById(plan, picks[s.id]) ?? optionById(plan, base[s.id])! })).filter((c) => !!c.option)
     const sc = scaleDay(chosen, targets(person, profile).kcal)
@@ -59,7 +59,7 @@ export async function syncReminders(): Promise<void> {
   const sub = await reg.pushManager.getSubscription()
   if (!sub) { setFlag(false); return }
   const s = useStore.getState()
-  const person = (s.me ?? s.person ?? 'vikas') as Person
+  const person = (s.me ?? s.person ?? 'vijai') as Person
   const today = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10)
   const skips = new Set((await db.days.where('person').equals(person).toArray()).filter((d) => d.skip).map((d) => d.date))
   const items = buildItems(person, today, s.settings, s.profiles[person], {}, skips)
@@ -70,7 +70,7 @@ export async function enableReminders(): Promise<void> {
   const cfg = getCfg()
   if (!cfg) throw new Error('Connect to the shared database first (Data tab).')
   if (!remindersSupported()) throw new Error('This browser can’t show notifications. On iPhone, install the app to your Home Screen first.')
-  if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications are blocked. Allow them for V² Fit in your phone’s Settings.')
+  if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications are blocked. Allow them for VJ Fit in your phone’s Settings.')
   const reg = await navigator.serviceWorker.ready
   const { publicKey } = await call<{ publicKey: string }>(DEFAULT_API, '/api/push/key')
   if (!(await reg.pushManager.getSubscription())) await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(publicKey) })

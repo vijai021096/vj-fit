@@ -23,7 +23,7 @@ export function buildICS(person: Person, profile: Profile, programStart: string)
   WEEKDAYS.forEach((wd, i) => {
     const s = PROGRAMS[person].days[wd]
     if (s.kind === 'rest') return
-    ev(`${person}-gym-${wd}`, addDays(w1, i), gym, Math.max(30, s.minutes), `🏋️ ${NAME[person]} · ${s.title}${s.subtitle ? ` — ${s.subtitle}` : ''}`, `FREQ=WEEKLY;BYDAY=${DAY[i]};UNTIL=${until}`, 'V² Fit')
+    ev(`${person}-gym-${wd}`, addDays(w1, i), gym, Math.max(30, s.minutes), `🏋️ ${NAME[person]} · ${s.title}${s.subtitle ? ` — ${s.subtitle}` : ''}`, `FREQ=WEEKLY;BYDAY=${DAY[i]};UNTIL=${until}`, 'VJ Fit')
   })
   const slots = PLANS[person].slots
   const times = mealTimes(slots.map((s) => s.id), profile.gymTime)

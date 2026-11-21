@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { AlertTriangle, Award, Camera, Check, ImageOff, LineChart as LC, Lock, Pencil, Ruler, Scale, Trash2 } from 'lucide-react'
 import { useStore, usePerson, useWeightHidden } from '../store'
-import { NAME, type Person, type SessionLog } from '../types'
+import { NAME, isCut, type Person, type SessionLog } from '../types'
 import { SessionEditor } from '../components/SessionEditor'
 import { db, dayId, setWeight, useLive, type MeasureRow, type PhotoRow, type WeightRow } from '../db'
 import { usePosition, useSessions } from '../lib/hooks'
@@ -15,10 +15,9 @@ import { EX, exName } from '../data/exercises'
 import { Btn, Card, Chip, Empty, Section, Segmented, Sheet, Skeletons, Stepper, cx, item, stagger } from '../components/ui'
 
 const FIELDS: Record<Person, { k: string; label: string }[]> = {
-  varsha: [{ k: 'waist', label: 'Waist' }, { k: 'hips', label: 'Hips' }, { k: 'shoulders', label: 'Shoulders (circumference)' }, { k: 'chest', label: 'Chest' }, { k: 'arm', label: 'Arm' }],
-  vikas: [{ k: 'chest', label: 'Chest' }, { k: 'arm', label: 'Arm' }, { k: 'shoulders', label: 'Shoulders' }, { k: 'waist', label: 'Waist' }],
+  vijai: [{ k: 'waist', label: 'Waist (at navel)' }, { k: 'chest', label: 'Chest' }, { k: 'arm', label: 'Arm (flexed)' }, { k: 'shoulders', label: 'Shoulders' }],
 }
-const RATE: Record<Person, [number, number]> = { vikas: [0.25, 0.35], varsha: [-0.5, -0.3] }
+const RATE: Record<Person, [number, number]> = { vijai: isCut('vijai') ? [-0.7, -0.4] : [0.25, 0.35] }
 const POSES = ['front', 'side', 'back', 'relaxed'] as const
 
 export function Progress() {
@@ -32,7 +31,7 @@ export function Progress() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={item} className="display text-[30px] font-semibold">Progress</motion.h1>
-      <motion.div variants={item}><button type="button" onClick={() => useStore.getState().open({ type: 'insights' })} className="w-full mt-3 card p-4 flex items-center gap-3 text-left min-h-[64px]"><span className="w-11 h-11 rounded-2xl accent-grad grid place-items-center text-[#08080c]"><LC size={20} /></span><span className="flex-1"><span className="block font-semibold text-[16px]">Insights</span><span className="block text-[13px] text-mute">Calories eaten &amp; burnt, workouts, steps — you and Varsha/Vikas</span></span></button></motion.div>
+      <motion.div variants={item}><button type="button" onClick={() => useStore.getState().open({ type: 'insights' })} className="w-full mt-3 card p-4 flex items-center gap-3 text-left min-h-[64px]"><span className="w-11 h-11 rounded-2xl accent-grad grid place-items-center text-[#08080c]"><LC size={20} /></span><span className="flex-1"><span className="block font-semibold text-[16px]">Insights</span><span className="block text-[13px] text-mute">Calories eaten &amp; burnt, workouts, steps — your trends</span></span></button></motion.div>
       <motion.div variants={item}><Headline person={person} weights={weights} measures={measures} /></motion.div>
       <Section title="Weight">{hidden ? <Card><p className="text-[14px] text-mute">{NAME[person]} has chosen to keep their weight private.</p></Card> : <WeightChart person={person} weights={weights} today={pos.date} />}</Section>
       <Section title="Measurements"><Measurements person={person} measures={measures} today={pos.date} /></Section>
@@ -58,16 +57,12 @@ function Headline({ person, weights, measures }: { person: Person; weights: Weig
   return (
     <div className="mt-3">
       <div className="grid grid-cols-2 gap-2">
-        {person === 'varsha' ? <>
-          <Tile label="Shoulder : hip" value={ratio(last)?.toFixed(2) ?? '—'} sub={ratio(first) && ratio(last) && first !== last ? `${(ratio(last)! - ratio(first)!) >= 0 ? '+' : ''}${(ratio(last)! - ratio(first)!).toFixed(2)} since you started` : 'Add measurements to track'} />
-          <Tile label="Waist trend" value={dWaist === null ? '—' : `${dWaist > 0 ? '+' : ''}${dWaist.toFixed(1)} cm`} sub={last?.v.waist ? `Now ${last.v.waist} cm` : 'Add measurements to track'} />
-        </> : <>
+        
           <Tile label="7-day average" value={hidden ? 'Hidden' : avg.length ? `${avg[avg.length - 1].avg.toFixed(1)} kg` : '—'} sub={hidden ? 'Private' : dW === null ? 'Log a few weigh-ins' : `${dW >= 0 ? '+' : ''}${dW.toFixed(1)} kg since you started`} />
           <Tile label="Waist" value={last?.v.waist ? `${last.v.waist} cm` : '—'} sub={dWaist === null ? 'Add measurements to track' : `${dWaist > 0 ? '+' : ''}${dWaist.toFixed(1)} cm since you started`} />
-        </>}
+        
       </div>
-      {person === 'vikas' && waist4 > 2 && <div className="mt-2 rounded-2xl border border-warn/40 bg-warn/10 text-warn px-3 py-2.5 text-[14px] flex gap-2"><AlertTriangle size={18} className="shrink-0 mt-0.5" /> Waist is up {waist4.toFixed(1)} cm in 4 weeks — the surplus may be too high.</div>}
-      {person === 'varsha' && <p className="text-[12px] text-mute mt-2 px-1">These two tell the real story — stronger shoulders and posture show here before the scale moves.</p>}
+      {!isCut(person) && waist4 > 2 && <div className="mt-2 rounded-2xl border border-warn/40 bg-warn/10 text-warn px-3 py-2.5 text-[14px] flex gap-2"><AlertTriangle size={18} className="shrink-0 mt-0.5" /> Waist is up {waist4.toFixed(1)} cm in 4 weeks — the surplus may be too high.</div>}
     </div>
   )
 }
@@ -95,7 +90,7 @@ function WeightChart({ person, weights, today }: { person: Person; weights: Weig
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex flex-wrap gap-2 mt-2 text-[12px]"><Chip>● Weigh-in</Chip><Chip tone="accent">— 7-day average</Chip><Chip>▒ Target {person === 'vikas' ? '+0.25–0.35' : '−0.3–0.5'} kg/wk</Chip></div>
+      <div className="flex flex-wrap gap-2 mt-2 text-[12px]"><Chip>● Weigh-in</Chip><Chip tone="accent">— 7-day average</Chip><Chip>▒ Target {isCut(person) ? '−0.4–0.7' : '+0.25–0.35'} kg/wk</Chip></div>
       <details className="mt-2"><summary className="text-[13px] text-mute min-h-[40px] flex items-center cursor-pointer">Edit weigh-ins</summary>
         <div className="space-y-1.5 mt-1">{[...weights].reverse().slice(0, 14).map((w) => <div key={w.id} className="flex items-center justify-between text-[14px] num px-1"><span>{fmtDate(w.date)}</span><span>{w.kg} kg</span><button type="button" aria-label={`Delete weigh-in ${w.date}`} className="w-10 h-10 grid place-items-center text-mute" onClick={() => void db.weights.delete(w.id)}><Trash2 size={15} /></button></div>)}
           <AddWeight person={person} today={today} /></div></details>
@@ -260,6 +255,10 @@ function Badges({ person, sessions, weights }: { person: Person; sessions: Sessi
     e['pullup-10'] = pu.some((s) => s.w === 0 && s.r >= 10)
     e['assist-half'] = pu.length > 1 && pu[0].w > 0 && pu.some((s) => s.w <= pu[0].w / 2)
     e['bench-bw5'] = allSets(sessions, 'bb-bench-press').some((s) => s.w >= bw && s.r >= 5)
+    const minAvg = movingAvg(weights).reduce((m, x) => Math.min(m, x.avg), Infinity)
+    e['kg-82'] = minAvg < 82
+    e['kg-77'] = minAvg <= 77
+    e['bench-bw'] = e['bench-bw5']
     e['squat-125'] = allSets(sessions, 'back-squat').some((s) => s.w >= 1.25 * bw && s.r >= 5)
     const weeks = new Map<string, number>()
     sessions.filter((s) => s.finishedAt && s.key !== 'day0').forEach((s) => weeks.set(`${s.cycle}|${s.weekIndex}`, (weeks.get(`${s.cycle}|${s.weekIndex}`) ?? 0) + 1))

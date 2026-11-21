@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, ArrowRight, CalendarOff, Check, Pencil, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils, Wind } from 'lucide-react'
 import { useStore, usePerson, useWeightHidden } from '../store'
-import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
+import { NAME, dietOf, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
 import { db, dayId, patchDay, setWeight, useLive, type DayRow } from '../db'
 import { useNow, usePosition, useSessions, useSkips } from '../lib/hooks'
 import { syncReminders } from '../lib/reminders'
@@ -11,16 +11,14 @@ import { RoutineSheet, type Routine } from '../components/RoutineSheet'
 import { startSession, todayPlan } from '../lib/session'
 import { PROGRAMS, resolveSession, sessionMuscles } from '../engine/program'
 import { addDays, fmtDate, greeting, istClock, istLong, istMinutes, week1Start } from '../engine/calendar'
-import { streak, weekKeys, otherPerson } from '../lib/history'
+import { streak, weekKeys } from '../lib/history'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
-import { fmtMin, mealName, mealTimes, scaleDay, targets, waterTarget } from '../engine/nutrition'
+import { fmtMin, mealName, mealTimes, scaleDay, stepsTarget, targets, waterTarget } from '../engine/nutrition'
 import { BodyMap } from '../components/BodyMap'
 import { Btn, Card, Chip, Ring, Section, Sheet, Stepper, Ticker, cx, item, stagger } from '../components/ui'
 import { downloadBackup } from '../lib/backup'
 import { extrasOf } from '../lib/insights'
 
-const WATER_L: Record<Person, number> = { vikas: 3.5, varsha: 2.75 }
-const STEPS: Record<Person, number> = { vikas: 7500, varsha: 9500 }
 export const GLASS = 0.25
 export const dayIndex = (wd: Weekday) => WEEKDAYS.indexOf(wd)
 
@@ -34,7 +32,7 @@ export function useMenu(person: Person, weekInMonth: number, dIdx: number, swaps
   const profile = useStore((s) => s.profiles[person])
   return useMemo(() => {
     const plan = PLANS[person]
-    const base = dayMenu(person, weekInMonth, dIdx, profile.veg)
+    const base = dayMenu(person, weekInMonth, dIdx, dietOf(profile))
     const picks = { ...base, ...swaps }
     const chosen = plan.slots.map((s) => ({ slot: s.id, option: optionById(plan, picks[s.id]) ?? optionById(plan, base[s.id])! }))
     const t = targets(person, profile)
@@ -209,8 +207,8 @@ export function Today() {
       <motion.div variants={item} className="grid grid-cols-4 gap-2 mt-4">
         {[
           { l: 'Protein', v: proteinEaten / Math.max(1, menu.t.protein), txt: `${Math.round(proteinEaten)} g`, icon: <Utensils size={16} />, on: () => setTab('diet') },
-          { l: 'Water', v: (day.water * GLASS) / WATER_L[person], txt: `${(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} L`, icon: <Droplets size={16} />, on: () => { void patchDay(person, pos.date, (x) => { x.water += 1 }); say('+1 glass (250 ml)') } },
-          { l: 'Steps', v: day.steps / STEPS[person], txt: day.steps ? `${(day.steps / 1000).toFixed(1)}k` : 'Log', icon: <Footprints size={16} />, on: () => setStepsOpen(true) },
+          { l: 'Water', v: (day.water * GLASS) / waterTarget(person, profile), txt: `${(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} L`, icon: <Droplets size={16} />, on: () => { void patchDay(person, pos.date, (x) => { x.water += 1 }); say('+1 glass (250 ml)') } },
+          { l: 'Steps', v: day.steps / stepsTarget(person, profile), txt: day.steps ? `${(day.steps / 1000).toFixed(1)}k` : 'Log', icon: <Footprints size={16} />, on: () => setStepsOpen(true) },
           { l: 'Workout', v: thisDone || doneToday ? 1 : active ? 0.5 : 0, txt: thisDone || doneToday ? 'Done' : active ? 'Going' : skippedToday ? 'Skipped' : res && res.def.kind === 'rest' ? 'Rest' : 'Not yet', icon: <Dumbbell size={16} />, on: () => active && open({ type: 'session' }) },
         ].map((r) => (
           <button key={r.l} type="button" onClick={r.on} aria-label={`${r.l}: ${r.txt}`} className="card p-2.5 flex flex-col items-center gap-1 active:scale-[0.97] transition-transform">
@@ -244,7 +242,6 @@ export function Today() {
       {backupDue && <motion.div variants={item}><Card className="mt-3"><div className="text-[14px]"><span className="font-semibold">Back up your logs.</span> iPhones can clear app storage. A weekly backup takes ten seconds.</div>
         <div className="flex gap-2 mt-3"><Btn className="flex-1" onClick={() => void downloadBackup()}>Back up now</Btn><Btn kind="soft" onClick={() => set((s) => { s.flags.backupNudge = Date.now() })}>Later</Btn></div></Card></motion.div>}
 
-      <Section title="Together"><Together /></Section>
 
       <SessionEditor id={editId} onClose={() => setEditId(null)} />
       <RoutineSheet open={!!routine} initial={lastRoutine.current} dayKind={res?.def.kind ?? 'full'} onClose={() => setRoutine(null)} />
@@ -271,7 +268,7 @@ export function Today() {
         })}</div>
       </Sheet>
       <Sheet open={stepsOpen} onClose={() => setStepsOpen(false)} title="Steps today">
-        <p className="text-[14px] text-mute mb-3">Type the number from your phone’s Health app. Target: {person === 'vikas' ? '7–8k' : '9–10k'} a day.</p>
+        <p className="text-[14px] text-mute mb-3">Type the number from your phone’s Health app. Target: {(stepsTarget(person, profile) / 1000).toFixed(0)}k a day — the easiest fat-loss lever.</p>
         <div className="flex justify-center"><Stepper value={day.steps} onChange={(v) => void patchDay(person, pos.date, (x) => { x.steps = v })} step={500} max={60000} unit="steps" label="Steps" big /></div>
         <Btn className="w-full mt-5" onClick={() => setStepsOpen(false)}>Done</Btn>
       </Sheet>
@@ -279,43 +276,3 @@ export function Today() {
   )
 }
 
-function Together() {
-  const me = usePerson()
-  const pos = usePosition()
-  const profiles = useStore((s) => s.profiles)
-  const actives = useStore((s) => s.active)
-  const avatars = useStore((s) => s.avatars)
-  const { setPerson, open } = useStore.getState()
-  const todays = useLive(() => db.sessions.where('date').equals(pos.date).toArray(), [pos.date], [])
-  const weekStart = addDays(pos.date, -WEEKDAYS.indexOf(pos.weekday))
-  const weekSessions = useLive(() => db.sessions.where('date').between(weekStart, pos.date, true, true).toArray(), [weekStart, pos.date], [])
-  const bothDays = (() => {
-    const by: Record<string, Set<string>> = {}
-    for (const x of weekSessions) if (x.finishedAt) (by[x.date] ??= new Set()).add(x.person)
-    return Object.values(by).filter((set) => set.size >= PEOPLE.length).length
-  })()
-  return (
-    <div>
-      {bothDays > 0 && <div className="mb-2" data-testid="both-trained"><Chip tone="ok"><Dumbbell size={13} /> Both trained {bothDays === 1 ? 'together on 1 day' : `on ${bothDays} days`} this week</Chip></div>}
-      <div className="grid grid-cols-2 gap-2">
-        {PEOPLE.map((p) => {
-          const pl = profiles[p].onboarded ? todayPlan(p, pos, profiles[p]) : null
-          const title = !pl ? 'Not set up yet' : pl.kind === 'day' || pl.kind === 'day0' ? pl.res.def.title : pl.kind === 'before' ? 'Starting soon' : 'Rest'
-          const done = todays.some((s) => s.person === p && s.finishedAt)
-          const status = done ? 'Done ✓' : actives[p] ? 'In progress' : pl && (pl.kind === 'day' || pl.kind === 'day0') && pl.res.def.kind !== 'rest' ? 'Not yet' : '—'
-          return (
-            <button key={p} type="button" onClick={() => (profiles[p].onboarded ? setPerson(p) : open({ type: 'profile', person: p }))} className={cx('card p-3 text-left', p === me && 'border-a1/50')}
-              style={{ ['--a1c' as string]: p === 'vikas' ? '#4c8dff' : '#ff6b9a', ['--a2c' as string]: p === 'vikas' ? '#22d3ee' : '#c77dff' }}>
-              <div className="flex items-center gap-2">
-                <span className="w-9 h-9 rounded-xl accent-grad grid place-items-center overflow-hidden text-[#08080c] display font-bold">{avatars[p] ? <img src={avatars[p]} alt="" className="w-full h-full object-cover" /> : NAME[p][0]}</span>
-                <span className="font-semibold">{NAME[p]}</span>
-              </div>
-              <div className="text-[13px] mt-2 truncate">{title}</div>
-              <div className={cx('text-[12px]', done ? 'text-ok' : 'text-mute')}>{status}</div>
-            </button>)
-        })}
-      </div>
-      <p className="text-[12px] text-mute mt-2 px-1">Both phones read the same shared data, so this is live for {NAME[otherPerson(me)]} too. Tap a card to view that person.</p>
-    </div>
-  )
-}

@@ -1,11 +1,10 @@
 import type { Block, Lift, Person, ProgramDef, SessionDef, Step, WeekMod, Weekday, MuscleId } from '../types'
 import { WEEK_MODS } from '../data/common'
-import { vikasProgram } from '../data/program.vikas'
-import { varshaProgram } from '../data/program.varsha'
+import { vijaiProgram } from '../data/program.vijai'
 import { EX } from '../data/exercises'
 
 /** The coach's plan, never mutated. */
-export const DEFAULT_PROGRAMS: Record<Person, ProgramDef> = { vikas: vikasProgram, varsha: varshaProgram }
+export const DEFAULT_PROGRAMS: Record<Person, ProgramDef> = { vijai: vijaiProgram }
 /** The plan in use — the coach's plan, or your edited copy (see lib/content.ts). */
 export const PROGRAMS: Record<Person, ProgramDef> = { ...DEFAULT_PROGRAMS }
 

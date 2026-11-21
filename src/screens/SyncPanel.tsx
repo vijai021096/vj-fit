@@ -7,7 +7,7 @@ import { Btn, Card, Section, Sheet, cx } from '../components/ui'
 const field = 'w-full bg-s2 rounded-xl px-3 min-h-[48px] text-[16px] border border-line/60'
 const ago = (t: number) => { const s = Math.max(0, Math.round((Date.now() - t) / 1000)); return s < 10 ? 'just now' : s < 90 ? `${s}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago` }
 
-/** Vikas and Varsha share one database. Each phone enters the household key once; after that it just stays up to date. */
+/** Optional cloud backup/sync across your devices. Enter the key once per device. */
 export function SyncPanel({ bare }: { bare?: boolean }) {
   const say = useStore((s) => s.say)
   const { state, last, error, linked } = useSync()
@@ -26,7 +26,7 @@ export function SyncPanel({ bare }: { bare?: boolean }) {
   const status = state === 'syncing' ? 'Syncing…' : state === 'offline' ? 'Offline — saved here, will sync later' : state === 'error' ? `Problem: ${error}` : state === 'unlinked' ? error : last ? `Up to date · ${ago(last)}` : 'Connecting…'
   const body = !linked ? (
     <>
-      <p className="text-[14px] text-mute">Vikas and Varsha share one database, so both phones show everything. Enter the household key once on this phone.</p>
+      <p className="text-[14px] text-mute">Optional: sync your logs across devices. Enter your sync key once on this device.</p>
       <label className="text-[12px] uppercase tracking-widest text-mute font-semibold block mt-3" htmlFor="hh-key">Household key</label>
       <input id="hh-key" className={cx(field, 'mt-1')} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="paste the key" value={key} onChange={(e) => setKeyText(e.target.value)} />
       <Btn className="w-full mt-3" disabled={busy || key.trim().length < 12} onClick={connect}><Cloud size={18} /> {busy ? 'Connecting…' : 'Connect'}</Btn>

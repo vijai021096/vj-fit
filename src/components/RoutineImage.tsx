@@ -4,11 +4,11 @@ import type { Person } from '../types'
 import { cx } from './ui'
 
 /**
- * Warm-up / cool-down picture. Looks for /media/routine/<id>.webp (Varsha: <id>.f.webp first), and a second pose <id>-2.webp
+ * Warm-up / cool-down picture. Looks for /media/routine/<id>.webp and a second pose <id>-2.webp
  * that it fades to and from. Renders nothing at all if the picture isn't there, so a missing file never leaves a gap.
  */
 export function RoutineImage({ id, person, className }: { id?: string; person: Person; className?: string }) {
-  const [stage, setStage] = useState<'f' | 'm' | 'none'>(person === 'varsha' ? 'f' : 'm')
+  const [stage, setStage] = useState<'f' | 'm' | 'none'>('m')
   const [two, setTwo] = useState(true)
   const reduce = useReducedMotion()
   if (!id || stage === 'none') return null

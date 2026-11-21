@@ -83,7 +83,7 @@ export function Insights() {
       const t = istDate(), stats = dayStats(who, rangeDates(t, dlN), pdata.days, pdata.sessions, pdata.weights, profile, s.settings)
       const sum = summarize(stats), tg = targets(who, profile), first = stats[0].date
       const blob = await buildInsightsPdf({
-        name: NAME[who], goal: who === 'vikas' ? 'Lean bulk' : 'Fat loss and strength', stats, sum, target: tg, stepsGoal: stepsTarget(who, profile),
+        name: NAME[who], goal: who === 'vijai' ? 'Lean bulk' : 'Fat loss and strength', stats, sum, target: tg, stepsGoal: stepsTarget(who, profile),
         notes: narrate(who, stats, sum, tg, stepsTarget(who, profile)), weights: pdata.weights.filter((w) => w.date >= first && w.date <= t).map((w) => ({ date: w.date, kg: w.kg })),
         generated: fmtDate(t, { day: 'numeric', month: 'short', year: 'numeric' }),
       })
@@ -158,7 +158,7 @@ export function Insights() {
                         <XAxis dataKey="date" tickFormatter={(d) => fmtDate(d, { day: 'numeric', month: 'short' })} tick={axis} axisLine={false} tickLine={false} minTickGap={24} />
                         <YAxis tick={axis} axisLine={false} tickLine={false} width={44} />
                         <Tooltip contentStyle={tip} labelFormatter={(d) => fmtDate(String(d))} formatter={(v, nme) => [`${v} kcal`, nme === 'eaten' ? 'Eaten' : 'Burnt (est.)']} />
-                        <Bar dataKey="eaten" fill="var(--a1c)" radius={[6, 6, 0, 0]} isAnimationActive={false}>{chart.map((d) => <Cell key={d.date} fill={d.eaten && (who === 'vikas' ? d.eaten >= a.target.kcal * 0.92 : d.eaten <= a.target.kcal * 1.08) ? 'var(--a1c)' : 'rgb(var(--warn))'} />)}</Bar>
+                        <Bar dataKey="eaten" fill="var(--a1c)" radius={[6, 6, 0, 0]} isAnimationActive={false}>{chart.map((d) => <Cell key={d.date} fill={d.eaten && (who === 'vijai' ? d.eaten >= a.target.kcal * 0.92 : d.eaten <= a.target.kcal * 1.08) ? 'var(--a1c)' : 'rgb(var(--warn))'} />)}</Bar>
                         <ReferenceLine y={a.target.kcal} stroke="rgb(var(--mute))" strokeDasharray="4 4" />
                         <Line dataKey="burn" stroke="var(--a2c)" strokeWidth={3} dot={false} isAnimationActive={false} />
                       </ComposedChart>

@@ -1,6 +1,8 @@
 /** Section 8D — food reference (≈ per serving). Used for swaps and display. */
 export interface Food { name: string; serving: string; kcal: number; protein: number }
 export const FOODS: Record<string, Food> = {
+  chicken: { name: 'Chicken breast', serving: '100 g raw', kcal: 120, protein: 23 },
+  fish: { name: 'Fish (seer / rohu)', serving: '100 g raw', kcal: 110, protein: 21 },
   egg: { name: 'Egg', serving: '1 whole', kcal: 72, protein: 6.3 },
   'egg-white': { name: 'Egg white', serving: '1', kcal: 17, protein: 3.6 },
   whey: { name: 'Whey', serving: '1 scoop', kcal: 120, protein: 24 },
@@ -46,9 +48,12 @@ export const CARBS: Record<CarbUnit, { kcal: number; protein: number; step: numb
 }
 
 /** Grocery catalogue: id → display name, aisle and unit. Quantities are raw/dry shopping amounts. */
-export type Aisle = 'Dairy' | 'Eggs' | 'Pulses' | 'Grains' | 'Produce' | 'Nuts' | 'Supplements'
-export const AISLES: Aisle[] = ['Dairy', 'Eggs', 'Pulses', 'Grains', 'Produce', 'Nuts', 'Supplements']
+export type Aisle = 'Meat & Fish' | 'Dairy' | 'Eggs' | 'Pulses' | 'Grains' | 'Produce' | 'Nuts' | 'Supplements'
+export const AISLES: Aisle[] = ['Meat & Fish', 'Dairy', 'Eggs', 'Pulses', 'Grains', 'Produce', 'Nuts', 'Supplements']
 export const GROCERY: Record<string, { name: string; aisle: Aisle; unit: string }> = {
+  chicken: { name: 'Chicken breast (boneless)', aisle: 'Meat & Fish', unit: 'g' },
+  fish: { name: 'Fish (seer / rohu / basa)', aisle: 'Meat & Fish', unit: 'g' },
+  prawns: { name: 'Prawns', aisle: 'Meat & Fish', unit: 'g' },
   milk: { name: 'Toned milk', aisle: 'Dairy', unit: 'ml' },
   curd: { name: 'Curd', aisle: 'Dairy', unit: 'g' },
   gy: { name: 'Greek yogurt', aisle: 'Dairy', unit: 'g' },

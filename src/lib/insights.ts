@@ -1,6 +1,6 @@
 import type { DayRow, Extra, WeightRow } from '../db'
 import type { Person, Profile, SessionLog } from '../types'
-import { WEEKDAYS } from '../types'
+import { WEEKDAYS, dietOf, isCut } from '../types'
 import { addDays, position } from '../engine/calendar'
 import { bmr, scaleDay, targets } from '../engine/nutrition'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
@@ -32,7 +32,7 @@ export function intakeOn(person: Person, row: DayRow | undefined, profile: Profi
   const wIdx = pos.phase === 'program' ? pos.weekInMonth : 1
   const dIdx = pos.phase === 'program' ? WEEKDAYS.indexOf(pos.weekday) : 6
   const plan = PLANS[person]
-  const base = dayMenu(person, wIdx, dIdx, profile.veg)
+  const base = dayMenu(person, wIdx, dIdx, dietOf(profile))
   const picks = { ...base, ...(row.swaps ?? {}) }
   const chosen = plan.slots.map((s) => ({ slot: s.id, option: optionById(plan, picks[s.id]) ?? optionById(plan, base[s.id])! })).filter((c) => !!c.option)
   const sc = scaleDay(chosen, targets(person, profile).kcal)
@@ -104,14 +104,14 @@ export function summarize(stats: DayStat[]): Summary {
 export type Tone = 'good' | 'warn' | 'plain'
 export interface Note { text: string; tone: Tone }
 
-/** Is this balance (eaten − burnt) what the person is aiming for? Vikas is gaining, Varsha is cutting. */
+/** Is this balance (eaten − burnt) what the person is aiming for? Goal-aware (cut or lean bulk). */
 export function balanceTone(person: Person, net: number | null): Tone {
   if (net == null) return 'plain'
-  if (person === 'vikas') return net >= 100 ? 'good' : net < -100 ? 'warn' : 'plain'
+  if (!isCut(person)) return net >= 100 ? 'good' : net < -100 ? 'warn' : 'plain'
   return net <= -150 ? (net < -900 ? 'warn' : 'good') : net > 100 ? 'warn' : 'plain'
 }
 
-/** Plain-language read-out of a period. Goal-aware: a surplus is good for Vikas and a deficit for Varsha. */
+/** Plain-language read-out of a period. Goal-aware: a deficit is good while cutting, a surplus while bulking. */
 export function narrate(person: Person, stats: DayStat[], sum: Summary, t: { kcal: number; protein: number }, stepsGoal: number): Note[] {
   const out: Note[] = []
   const n = stats.length
@@ -120,8 +120,8 @@ export function narrate(person: Person, stats: DayStat[], sum: Summary, t: { kca
     const gap = sum.avgEaten - t.kcal
     const pct = Math.abs(gap) / t.kcal
     if (pct <= 0.08) out.push({ text: `Eating right on target: about ${sum.avgEaten.toLocaleString('en-IN')} kcal a day against ${t.kcal.toLocaleString('en-IN')}.`, tone: 'good' })
-    else if (gap < 0) out.push({ text: `About ${Math.abs(gap).toLocaleString('en-IN')} kcal a day under target${person === 'vikas' ? ', which slows a lean bulk. Add a snack or a bigger portion.' : '. Fine for fat loss unless you feel drained; don’t go lower.'}`, tone: person === 'vikas' ? 'warn' : pct > 0.25 ? 'warn' : 'good' })
-    else out.push({ text: `About ${gap.toLocaleString('en-IN')} kcal a day over target${person === 'vikas' ? ', which is fine while bulking.' : ', which stalls fat loss. Check portions and extras.'}`, tone: person === 'vikas' ? 'good' : 'warn' })
+    else if (gap < 0) out.push({ text: `About ${Math.abs(gap).toLocaleString('en-IN')} kcal a day under target${!isCut(person) ? ', which slows a lean bulk. Add a snack or a bigger portion.' : '. Fine for fat loss unless you feel drained; don’t go lower.'}`, tone: !isCut(person) ? 'warn' : pct > 0.25 ? 'warn' : 'good' })
+    else out.push({ text: `About ${gap.toLocaleString('en-IN')} kcal a day over target${!isCut(person) ? ', which is fine while bulking.' : ', which stalls fat loss. Check portions and extras.'}`, tone: !isCut(person) ? 'good' : 'warn' })
     const proteinDays = stats.filter((d) => d.eaten > 0 && d.protein >= t.protein * 0.9).length
     out.push({ text: `Protein hit on ${proteinDays} of ${sum.eatDays} logged days (target ${t.protein} g).`, tone: proteinDays / sum.eatDays >= 0.7 ? 'good' : 'warn' })
   } else out.push({ text: 'No food logged in this period, so calories and protein can’t be read.', tone: 'warn' })

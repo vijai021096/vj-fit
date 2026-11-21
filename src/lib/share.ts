@@ -7,7 +7,7 @@ export async function shareCard(o: { name: string; title: string; date: string; 
   const g = x.createRadialGradient(200, 100, 0, 200, 100, 1100); g.addColorStop(0, o.c1 + 'aa'); g.addColorStop(0.5, o.c2 + '33'); g.addColorStop(1, '#0B0B0F00')
   x.fillStyle = g; x.fillRect(0, 0, W, H)
   const font = (w: number, s: number, f = 'Bricolage Grotesque Variable') => { x.font = `${w} ${s}px "${f}", system-ui, sans-serif` }
-  x.fillStyle = '#fff'; font(700, 64); x.fillText('V² Fit', 80, 150)
+  x.fillStyle = '#fff'; font(700, 64); x.fillText('VJ Fit', 80, 150)
   x.fillStyle = '#A0A0B4'; font(500, 40, 'Inter Variable'); x.fillText(o.date, 80, 215)
   x.fillStyle = '#fff'; font(700, 120); wrap(x, o.title, 80, 480, W - 160, 128)
   const lg = x.createLinearGradient(80, 0, 700, 0); lg.addColorStop(0, o.c1); lg.addColorStop(1, o.c2)
@@ -22,7 +22,7 @@ export async function shareCard(o: { name: string; title: string; date: string; 
   if (!blob) return
   const file = new File([blob], 'v2fit-session.png', { type: 'image/png' })
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
-  if (nav.canShare?.({ files: [file] })) { try { await nav.share({ files: [file], title: 'V² Fit' }); return } catch { return } }
+  if (nav.canShare?.({ files: [file] })) { try { await nav.share({ files: [file], title: 'VJ Fit' }); return } catch { return } }
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click()
 }
 function wrap(x: CanvasRenderingContext2D, text: string, px: number, py: number, max: number, lh: number) {

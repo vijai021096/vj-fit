@@ -31,7 +31,7 @@ export interface Active {
 }
 
 const blank = (sex: 'male' | 'female'): Profile => ({
-  heightCm: sex === 'male' ? 175 : 160, weightKg: sex === 'male' ? 72 : 62, age: 28, sex, gymTime: '07:00', veg: false, kcalAdjust: 0, onboarded: false,
+  heightCm: sex === 'male' ? 175 : 160, weightKg: sex === 'male' ? 86 : 62, age: 34, sex, gymTime: '07:00', veg: false, diet: 'nonveg', goalWeightKg: 77, kcalAdjust: 0, onboarded: false,
 })
 
 interface State {
@@ -47,7 +47,7 @@ interface State {
   /** Your edits to the coach's plan. Absent = use the coach's version. */
   content: { programs: Partial<Record<Person, ProgramDef>>; meals: Partial<Record<Person, MealPlan>> }
   contentRev: number
-  /** Edit time per content record, e.g. `program:vikas` — drives sync. */
+  /** Edit time per content record, e.g. `program:vijai` — drives sync. */
   contentAt: Record<string, number>
   active: Record<Person, Active | null>
   /** The stand-alone cardio stopwatch (one at a time). Survives a reload. */
@@ -66,18 +66,18 @@ interface State {
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
-      person: null,
-      me: null,
-      profiles: { vikas: blank('male'), varsha: blank('female') },
+      person: 'vijai',
+      me: 'vijai',
+      profiles: { vijai: blank('male') },
       avatars: {},
       settings: { programStart: DEFAULT_START, mergeDay0: false, theme: 'dark', sounds: true, creatine: true },
-      flags: { disclaimer: false, install: false, rir: false, backupNudge: 0, lastBackup: 0, reviewDone: { vikas: 1, varsha: 1 }, phase: 'bulk' },
-      badges: { vikas: {}, varsha: {} },
+      flags: { disclaimer: false, install: false, rir: false, backupNudge: 0, lastBackup: 0, reviewDone: { vijai: 1 }, phase: 'cut' },
+      badges: { vijai: {} },
       grocery: {},
       content: { programs: {}, meals: {} },
       contentRev: 0,
       contentAt: {},
-      active: { vikas: null, varsha: null },
+      active: { vijai: null },
       quick: null,
       tab: 'today',
       overlay: null,
@@ -103,7 +103,7 @@ export const useStore = create<State>()(
       say: (m) => { set({ toast: m }); setTimeout(() => { if (get().toast === m) set({ toast: null }) }, 2600) },
     }),
     {
-      name: 'v2fit-store',
+      name: 'vjfit-store',
       version: 1,
       partialize: (s) => ({ person: s.person, me: s.me, profiles: s.profiles, avatars: s.avatars, settings: s.settings, flags: s.flags, badges: s.badges, grocery: s.grocery, content: s.content, contentAt: s.contentAt, active: s.active, quick: s.quick, overlay: s.overlay?.type === 'session' ? s.overlay : null }) as unknown as State,
       migrate: (persisted) => persisted as State,
@@ -112,7 +112,7 @@ export const useStore = create<State>()(
   ),
 )
 
-export const usePerson = () => useStore((s) => s.person) ?? 'vikas'
+export const usePerson = () => useStore((s) => s.person) ?? 'vijai'
 export const useProfile = () => { const p = usePerson(); return useStore((s) => s.profiles[p]) }
 
 /** True when `person` asked to hide their weight and this phone belongs to someone else. */

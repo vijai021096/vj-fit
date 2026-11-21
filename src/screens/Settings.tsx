@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, CalendarPlus, Download, HardDriveDownload, Info, Pencil, Smartphone, Trash2, Upload } from 'lucide-react'
 import { useStore, usePerson } from '../store'
-import { NAME } from '../types'
+import { NAME, dietOf, type Diet } from '../types'
 import { DISCLAIMER } from '../data/common'
 import { EXERCISES, NO_MEDIA, exName } from '../data/exercises'
 import { loadManifest } from '../components/Media'
@@ -68,15 +68,9 @@ export function Settings() {
         <div className="px-4 pb-2"><Segmented id="set-tab" value={tab} onChange={setTab} options={[{ value: 'you', label: 'You' }, { value: 'plan', label: 'Plan' }, { value: 'data', label: 'Data' }]} /></div>
         <div className="flex-1 overflow-y-auto px-4 pb-10 no-scrollbar">
           {tab === 'you' && <>
-          <Section title="This phone" className="!mt-2">
-            <Card>
-              <Row label="Whose phone is this?" sub="The app opens on this person and warns when you’re viewing the other."><Segmented id="set-me" small value={s.me ?? 'none'} onChange={(v) => s.set((x) => { x.me = v === 'none' ? null : v })} options={[{ value: 'vikas', label: 'Vikas' }, { value: 'varsha', label: 'Varsha' }]} /></Row>
-              <Row label="Hide my weight from the other phone" sub="Hides your kg and weight chart when the other person views you. A courtesy, not a lock: both phones share the same data."><Toggle label="Hide my weight" on={!!s.profiles[s.me ?? person].hideWeight} onChange={(v) => s.set((x) => { x.profiles[x.me ?? person].hideWeight = v })} /></Row>
-            </Card>
-          </Section>
           <Section title="Reminders">
             <Card>
-              <Row label="Meal, water and gym reminders" sub={remindersSupported() ? 'Pushed from the server to this phone for whoever owns it. Needs the app installed to your Home Screen on iPhone.' : 'Not available in this browser. On iPhone, add the app to your Home Screen first.'}><Toggle label="Reminders" on={rem} onChange={(v) => { if (!remBusy) void toggleRem(v) }} /></Row>
+              <Row label="Meal, water and gym reminders" sub={remindersSupported() ? 'Pushed from the server to this phone. Needs the app installed to your Home Screen on iPhone.' : 'Not available in this browser. On iPhone, add the app to your Home Screen first.'}><Toggle label="Reminders" on={rem} onChange={(v) => { if (!remBusy) void toggleRem(v) }} /></Row>
               {rem && <Btn kind="soft" className="w-full mt-2" onClick={() => void sendTestReminder().then(() => s.say('Test sent. It should arrive in a few seconds.')).catch((e: Error) => s.say(e.message))}>Send a test reminder</Btn>}
               {rem && <p className="text-[12px] text-mute mt-2">Each phone uploads the next 7 days of reminders whenever you open the app, so open it at least once a week.</p>}
             </Card>
@@ -84,10 +78,10 @@ export function Settings() {
           <Section title={`${NAME[person]}’s profile`}>
             <Card>
               <div className="grid grid-cols-4 gap-2 text-center mb-2">{[['Height', `${p.heightCm} cm`], ['Weight', p.hideWeight && s.me && s.me !== person ? 'Hidden' : `${p.weightKg} kg`], ['Age', `${p.age}`], ['Gym', p.gymTime]].map(([l, v]) => <div key={l} className="rounded-xl bg-s2 py-2"><div className="display font-semibold num">{v}</div><div className="text-[11px] text-mute">{l}</div></div>)}</div>
-              <div className="text-[13px] text-mute num">BMR ≈ {t.bmr} · TDEE ≈ {t.tdee} · Target ≈ {t.kcal} kcal · Protein ≈ {t.protein} g{t.floored ? ' · at the 1,350 floor' : ''}</div>
+              <div className="text-[13px] text-mute num">BMR ≈ {t.bmr} · TDEE ≈ {t.tdee} · Target ≈ {t.kcal} kcal · Protein ≈ {t.protein} g{t.floored ? ' · at the 1,800 floor' : ''}</div>
               <Btn kind="soft" className="w-full mt-3" onClick={() => s.open({ type: 'profile', person })}>Edit stats, gym time and diet</Btn>
-              <Row label="Diet" sub="Veg-only removes egg meals"><Segmented id="set-veg" small value={p.veg ? 'veg' : 'egg'} onChange={(v) => s.set((x) => { x.profiles[person].veg = v === 'veg' })} options={[{ value: 'egg', label: 'Eggetarian' }, { value: 'veg', label: 'Veg' }]} /></Row>
-              {person === 'vikas' && <Row label="Trainer approved my squat form" sub="Switches Tuesday from goblet squat to back squat"><Toggle label="Squat approved" on={!!p.squatApproved} onChange={(v) => s.set((x) => { x.profiles.vikas.squatApproved = v })} /></Row>}
+              <Row label="Diet" sub="Egg removes chicken & fish meals; Veg also removes eggs"><Segmented id="set-veg" small value={dietOf(p)} onChange={(v) => s.set((x) => { x.profiles[person].diet = v as Diet; x.profiles[person].veg = v === 'veg' })} options={[{ value: 'nonveg', label: 'Non-veg' }, { value: 'egg', label: 'Egg' }, { value: 'veg', label: 'Veg' }]} /></Row>
+              {person === 'vijai' && <Row label="Trainer approved my squat form" sub="Switches Tuesday from goblet squat to back squat"><Toggle label="Squat approved" on={!!p.squatApproved} onChange={(v) => s.set((x) => { x.profiles.vijai.squatApproved = v })} /></Row>}
               <Row label="Units"><span className="text-mute">kg · cm</span></Row>
             </Card>
           </Section>
@@ -145,7 +139,7 @@ export function Settings() {
           <Section title="About">
             <Card>
               <div className="flex gap-2 text-[14px]"><Info size={18} className="shrink-0 mt-0.5 text-mute" /><p>{DISCLAIMER}</p></div>
-              <p className="text-[12px] text-mute mt-3">Exercise photos: free-exercise-db (public domain). V² Fit v1.0.</p>
+              <p className="text-[12px] text-mute mt-3">Exercise photos: free-exercise-db (public domain). VJ Fit (based on V² Fit).</p>
               <Btn kind="danger" className="w-full mt-4" onClick={() => setConfirm(true)}><Trash2 size={18} /> Reset everything</Btn>
             </Card>
           </Section>

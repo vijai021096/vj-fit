@@ -5,7 +5,7 @@ import { planOk, programOk } from './content'
 import { WEEKDAYS } from '../types'
 
 describe('content validation', () => {
-  for (const p of ['vikas', 'varsha'] as const) {
+  for (const p of ['vijai'] as const) {
     it(`${p}: coach program and meal plan pass the shape check`, () => {
       const prog = DEFAULT_PROGRAMS[p]
       const bad = WEEKDAYS.flatMap((d) => prog.days[d].blocks.map((b, i) => [d, i, b] as const)).filter(([, , b]) => !programOk({ ...prog, days: Object.fromEntries(WEEKDAYS.map((d) => [d, { ...prog.days[d], blocks: [] }])) as never, months: prog.months } as never) || false)

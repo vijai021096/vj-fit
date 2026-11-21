@@ -1,9 +1,13 @@
-import type { Person, Profile } from '../types'
+import { isCut, type Person, type Profile } from '../types'
 import { CARBS, type CarbUnit } from '../data/foods'
 import type { MealOption, SlotId } from '../data/meals.types'
 
-export const VARSHA_FLOOR = 1350
-export const ACTIVITY = 1.55
+/** Never prescribe below this while cutting (male). */
+export const CUT_FLOOR = 1800
+/** Deficit used while cutting: ~0.5–0.7 kg/week of fat loss at your size. */
+export const CUT_DEFICIT = 550
+/** Desk job + 5 gym days. Steps on top are your buffer. */
+export const ACTIVITY = 1.45
 export const PROTEIN_PER_KG = 1.9
 
 /** Mifflin-St Jeor */
@@ -15,9 +19,9 @@ export const tdee = (p: Pick<Profile, 'weightKg' | 'heightCm' | 'age' | 'sex'>) 
 export interface Targets { bmr: number; tdee: number; kcal: number; protein: number; fat: number; carbs: number; floored: boolean }
 export function targets(person: Person, p: Profile): Targets {
   const t = tdee(p)
-  const raw = person === 'vikas' ? t + 300 + (p.kcalAdjust || 0) : t - 450 + (p.kcalAdjust || 0)
-  const floored = person === 'varsha' && raw < VARSHA_FLOOR
-  const kcal = Math.round(floored ? VARSHA_FLOOR : raw)
+  const raw = !isCut(person) ? t + 300 + (p.kcalAdjust || 0) : t - CUT_DEFICIT + (p.kcalAdjust || 0)
+  const floored = isCut(person) && raw < CUT_FLOOR
+  const kcal = Math.round(floored ? CUT_FLOOR : raw)
   const protein = Math.round((p.proteinPerKg || PROTEIN_PER_KG) * p.weightKg)
   const fat = Math.round((kcal * 0.25) / 9)
   const carbs = Math.max(0, Math.round((kcal - protein * 4 - fat * 9) / 4))
@@ -49,17 +53,17 @@ export interface Adjust { delta: number; reason: string }
 /** Section 8A auto-adjust, evaluated every 14 days. trend is kg/week (positive = gaining). */
 export function autoAdjust(person: Person, trend: number, currentKcal: number, adherence = 1): Adjust {
   const f = (n: number) => `${Math.abs(n).toFixed(2)} kg/week`
-  if (person === 'vikas') {
+  if (!isCut(person)) {
     if (trend < 0.2) return { delta: 150, reason: `You’re gaining ${trend < 0 ? '−' : ''}${f(trend)}, under the 0.25–0.35 target, so we added about 150 kcal.` }
     if (trend > 0.5) return { delta: -150, reason: `You’re gaining ${f(trend)}, faster than planned, so we trimmed about 150 kcal to keep it lean.` }
     return { delta: 0, reason: `Gaining ${f(trend)} — right on track. No change.` }
   }
   const loss = -trend
-  if (loss > 0.7) return { delta: 100, reason: `Your average is dropping ${f(loss)}, faster than planned, so we added about 100 kcal to protect your strength and energy.` }
+  if (loss > 1) return { delta: 100, reason: `Your average is dropping ${f(loss)}, faster than planned, so we added about 100 kcal to protect your strength and energy.` }
   if (loss < 0.2) {
     if (adherence < 0.8) return { delta: 0, reason: 'Progress has been slow, but meals were logged on fewer than 80% of days — let’s get consistent before changing anything.' }
-    if (currentKcal <= VARSHA_FLOOR) return { delta: 0, reason: `You’re already at the ${VARSHA_FLOOR} kcal floor, so calories stay put. Steps and sleep are the levers now.` }
-    const delta = -Math.min(100, currentKcal - VARSHA_FLOOR)
+    if (currentKcal <= CUT_FLOOR) return { delta: 0, reason: `You’re already at the ${CUT_FLOOR} kcal floor, so calories stay put. Steps and sleep are the levers now.` }
+    const delta = -Math.min(100, currentKcal - CUT_FLOOR)
     return { delta, reason: `Your average has been nearly flat for two weeks with great consistency, so we trimmed about ${-delta} kcal.` }
   }
   return { delta: 0, reason: `Your average is moving ${f(loss)} — right on track. No change.` }
@@ -157,7 +161,7 @@ export function mealTimes(slots: SlotId[], gymTime: string, durationMin = 60): P
   return out
 }
 
-export const DEFAULT_WATER_L: Record<Person, number> = { vikas: 3.5, varsha: 2.75 }
-export const DEFAULT_STEPS: Record<Person, number> = { vikas: 7500, varsha: 9500 }
+export const DEFAULT_WATER_L: Record<Person, number> = { vijai: 4 }
+export const DEFAULT_STEPS: Record<Person, number> = { vijai: 10000 }
 export const waterTarget = (person: Person, p: Profile) => p.waterL || DEFAULT_WATER_L[person]
 export const stepsTarget = (person: Person, p: Profile) => p.stepsTarget || DEFAULT_STEPS[person]

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Check, GlassWater, Pill, Plus, Repeat, Send, ShoppingBasket, Trash2 } from 'lucide-react'
 import type { MealOption } from '../data/meals.types'
 import { useStore, usePerson } from '../store'
-import { NAME, PEOPLE, WD_LABEL, WEEKDAYS } from '../types'
+import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, dietOf } from '../types'
 import { patchDay, type Extra } from '../db'
 import { useNow, usePosition } from '../lib/hooks'
 import { GLASS, dayIndex, useDay, useMenu } from './Today'
@@ -52,7 +52,7 @@ export function Diet() {
     const slot = menu.plan.slots.find((s) => s.id === swapSlot)
     const cur = menu.chosen.find((c) => c.slot === swapSlot)?.option
     if (!slot || !cur) return null
-    const { strict, loose } = swapOptions(slot, cur.id, profile.veg)
+    const { strict, loose } = swapOptions(slot, cur.id, dietOf(profile))
     const scoopsElsewhere = menu.chosen.filter((c) => c.slot !== swapSlot).reduce((n, c) => n + (c.option.whey ?? 0), 0)
     const okWhey = (o: MealOption) => scoopsElsewhere + (o.whey ?? 0) <= WHEY_CAP
     return { slot, cur, strict: strict.filter(okWhey), loose: loose.filter(okWhey) }
@@ -91,7 +91,7 @@ export function Diet() {
           {menu.plan.slots.map((s) => {
             const c = menu.chosen.find((x) => x.slot === s.id)!
             const eaten = isToday && !!day.eaten[s.id]
-            const alt = swapOptions(s, c.option.id, profile.veg)
+            const alt = swapOptions(s, c.option.id, dietOf(profile))
             const whey = menu.chosen.filter((x) => x.slot !== s.id).reduce((n, x) => n + (x.option.whey ?? 0), 0)
             const alts = [...alt.strict, ...alt.loose].filter((o) => whey + (o.whey ?? 0) <= WHEY_CAP).slice(0, 2)
             return (
@@ -176,7 +176,7 @@ function Grocery({ week, setWeek }: { week: number; setWeek: (w: number) => void
   const key = (id: string) => `${week}|${id}`
   const weekChecked = Object.fromEntries(list.flatMap((g) => g.items.map((i) => [i.id, !!checked[key(i.id)]])))
   const total = list.reduce((n, g) => n + g.items.length, 0), got = Object.values(weekChecked).filter(Boolean).length
-  const title = `V² Fit groceries — Week ${week} (${WEEK_THEMES[week - 1]}) for ${people.map((p) => NAME[p.person]).join(' & ')}`
+  const title = `VJ Fit groceries — Week ${week} (${WEEK_THEMES[week - 1]}) for ${people.map((p) => NAME[p.person]).join(' & ')}`
   const share = async () => {
     const text = groceryText(list, title, weekChecked)
     if (navigator.share) { try { await navigator.share({ text }); return } catch { /* cancelled */ } }
@@ -190,7 +190,7 @@ function Grocery({ week, setWeek }: { week: number; setWeek: (w: number) => void
       </motion.div>
       <motion.div variants={item}><Card className="mt-3 flex items-center gap-3">
         <div className="w-11 h-11 rounded-2xl bg-a1/15 accent-text grid place-items-center"><ShoppingBasket size={20} /></div>
-        <div className="flex-1"><div className="font-semibold">One week, {people.length === 2 ? 'both of you' : NAME[people[0]?.person ?? 'vikas']}</div><div className="text-[12px] text-mute num">{got} of {total} in the basket · ≈ quantities, rounded up</div></div>
+        <div className="flex-1"><div className="font-semibold">One week, {people.length === 2 ? 'both of you' : NAME[people[0]?.person ?? 'vijai']}</div><div className="text-[12px] text-mute num">{got} of {total} in the basket · ≈ quantities, rounded up</div></div>
         <Btn kind="soft" onClick={share} label="Share list to WhatsApp"><Send size={16} /></Btn>
       </Card></motion.div>
       {people.length < 2 && <p className="text-[12px] text-mute mt-2 px-1">Set up the other profile to get a combined household list.</p>}
