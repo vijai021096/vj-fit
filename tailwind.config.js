@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Bricolage Grotesque Variable"', 'system-ui', 'sans-serif'],
+        display: ['"Barlow Condensed"', 'Impact', 'system-ui', 'sans-serif'],
         sans: ['"Inter Variable"', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {

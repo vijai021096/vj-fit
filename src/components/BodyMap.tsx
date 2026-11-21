@@ -64,6 +64,8 @@ interface Props {
   secondary?: MuscleId[]
   /** 0–1 intensity per muscle (heatmap mode) */
   heat?: Partial<Record<MuscleId, number>>
+  /** Colour for heat mode (defaults to the lime accent) */
+  heatFill?: string
   selected?: MuscleId | null
   onSelect?: (m: MuscleId) => void
   side?: 'front' | 'back'
@@ -74,11 +76,11 @@ interface Props {
   className?: string
 }
 
-function Figure({ side, primary = [], secondary = [], heat, selected, onSelect, height }: Props & { side: 'front' | 'back' }) {
+function Figure({ side, primary = [], secondary = [], heat, heatFill, selected, onSelect, height }: Props & { side: 'front' | 'back' }) {
   const regions = side === 'front' ? FRONT : BACK
   const style = (id: MuscleId): { fill: string; opacity: number; cls?: string } => {
     if (selected === id) return { fill: 'var(--a2c)', opacity: 1, cls: 'muscle-primary' }
-    if (heat) { const v = heat[id] ?? 0; return v > 0 ? { fill: 'var(--a1c)', opacity: 0.25 + 0.75 * Math.min(1, v) } : { fill: 'rgb(var(--s3))', opacity: 1 } }
+    if (heat) { const v = heat[id] ?? 0; return v > 0.02 ? { fill: heatFill ?? 'var(--a1c)', opacity: 0.25 + 0.75 * Math.min(1, v) } : { fill: 'rgb(var(--s3))', opacity: 1 } }
     if (primary.includes(id)) return { fill: 'url(#bm-grad)', opacity: 1, cls: 'muscle-primary' }
     if (secondary.includes(id)) return { fill: 'var(--a1c)', opacity: 0.4 }
     return { fill: 'rgb(var(--s3))', opacity: 1 }

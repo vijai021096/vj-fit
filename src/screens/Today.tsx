@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { AlertTriangle, ArrowRight, CalendarOff, Check, Pencil, Clock, Droplets, Dumbbell, Flame, Footprints, Moon, Play, Shuffle, Sparkles, Utensils, Wind } from 'lucide-react'
 import { useStore, usePerson, useWeightHidden } from '../store'
-import { NAME, dietOf, WD_LABEL, WEEKDAYS, type Person, type Weekday } from '../types'
+import { NAME, dietOf, WD_LABEL, WEEKDAYS, type MuscleId, type Person, type Weekday } from '../types'
 import { db, dayId, patchDay, setWeight, useLive, type DayRow } from '../db'
 import { useNow, usePosition, useSessions, useSkips } from '../lib/hooks'
 import { syncReminders } from '../lib/reminders'
@@ -15,6 +15,8 @@ import { streak, weekKeys } from '../lib/history'
 import { PLANS, dayMenu, optionById } from '../engine/rotation'
 import { fmtMin, mealName, mealTimes, scaleDay, stepsTarget, targets, waterTarget } from '../engine/nutrition'
 import { BodyMap } from '../components/BodyMap'
+import { GoalCard, LevelCard, RecoveryCard } from '../components/Dashboard'
+import type { WeightRow } from '../db'
 import { Btn, Card, Chip, Ring, Section, Sheet, Stepper, Ticker, cx, item, stagger } from '../components/ui'
 import { downloadBackup } from '../lib/backup'
 import { extrasOf } from '../lib/insights'
@@ -67,6 +69,8 @@ export function Today() {
   const todayW = useLive(() => db.weights.get(dayId(person, pos.date)), [person, pos.date], undefined)
   useEffect(() => { setKg(todayW?.kg ?? profile.weightKg) }, [todayW?.kg, profile.weightKg, person])
 
+  const allWeights = useLive<WeightRow[]>(() => db.weights.where('person').equals(person).sortBy('date'), [person], [])
+  const allDays = useLive<DayRow[]>(() => db.days.where('person').equals(person).toArray(), [person], [])
   const plan = todayPlan(person, pos, profile)
   const res = plan.kind === 'day' || plan.kind === 'day0' ? plan.res : null
   const doneKeys = weekKeys(sessions ?? [], pos.cycle, pos.weekIndex)
@@ -126,9 +130,12 @@ export function Today() {
         <h1 className="display text-[32px] leading-tight font-semibold mt-1">{greeting(mins)}, <span className="accent-grad-text">{NAME[person]}</span></h1>
         <div className="mt-2 flex items-center gap-2 flex-wrap">
           <Chip tone="accent">{positionLabel}</Chip>
-          <Chip><Flame size={13} className="accent-text" /> <Ticker value={stk} /> streak</Chip>
+          <Chip><Dumbbell size={13} className="accent-text" /> <Ticker value={stk} /> gym days in a row</Chip>
         </div>
       </motion.div>
+
+      {!weightHidden && <motion.div variants={item}><GoalCard weights={allWeights} profile={profile} today={pos.date} /></motion.div>}
+      {sessions && <motion.div variants={item}><LevelCard person={person} profile={profile} weights={allWeights} days={allDays} sessions={sessions} settings={settings} today={pos.date} /></motion.div>}
 
       {needsReview && <motion.div variants={item}><Card className="mt-4 border-a1/50" onClick={() => open({ type: 'review' })}><div className="flex items-center gap-3"><Sparkles className="accent-text" /><div className="flex-1"><div className="font-semibold">12 weeks done — your Program Review is ready</div><div className="text-[13px] text-mute">See your trends, then start Cycle {pos.cycle}.</div></div><ArrowRight size={18} /></div></Card></motion.div>}
 
@@ -216,6 +223,8 @@ export function Today() {
             <div className="text-[13px] font-semibold num">{r.txt}</div><div className="text-[11px] text-mute -mt-1">{r.l}</div>
           </button>))}
       </motion.div>
+
+      {sessions && <motion.div variants={item}><RecoveryCard sessions={sessions} todayPrimary={(res && res.def.kind !== 'rest' && res.def.kind !== 'active' && !thisDone ? muscles?.primary ?? [] : []) as MuscleId[]} /></motion.div>}
 
       {/* Next meal */}
       {next && nextOpt && <motion.div variants={item}><Card className="mt-3" onClick={() => setTab('diet')}>

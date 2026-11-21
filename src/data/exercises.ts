@@ -1,4 +1,5 @@
 import type { Exercise, LoadType, MuscleId } from '../types'
+import { EXTRA } from './exercises.extra'
 
 /**
  * Exercise library. One record per exercise — edit text here, no component changes needed.
@@ -355,6 +356,12 @@ const RAW: Raw[] = [
     ['Leaning on the handles → stand tall', 'On your toes → heels down', 'Too hard → lower resistance'],
     'Steady, relaxed breathing', '—', ['incline-walk', 'bike'], 'Easy = you can chat', 'Step off only when the pedals stop.'],
 ]
+
+// VJ Fit extras: append, and add each to the Swap list of the exercises it can replace.
+for (const [id, name, equipment, loadType, primary, secondary, howTo, cues, mistakes, breathing, tempo, alternatives, startingTip, safety, swapFor] of EXTRA) {
+  RAW.push([id, name, equipment, loadType, primary, secondary, howTo, cues, mistakes, breathing, tempo, alternatives, startingTip, safety])
+  for (const target of swapFor) { const r = RAW.find((x) => x[0] === target); if (r && !r[11].includes(id)) r[11] = [...r[11], id] }
+}
 
 export const EXERCISES: Exercise[] = RAW.map(
   ([id, name, equipment, loadType, primary, secondary, howTo, cues, mistakes, breathing, tempo, alternatives, startingTip, safety, mediaNote]) => ({

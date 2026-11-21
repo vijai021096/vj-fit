@@ -35,7 +35,7 @@ export function Progress() {
       <motion.div variants={item}><Headline person={person} weights={weights} measures={measures} /></motion.div>
       <Section title="Weight">{hidden ? <Card><p className="text-[14px] text-mute">{NAME[person]} has chosen to keep their weight private.</p></Card> : <WeightChart person={person} weights={weights} today={pos.date} />}</Section>
       <Section title="Measurements"><Measurements person={person} measures={measures} today={pos.date} /></Section>
-      <Section title="Progress photos"><Photos person={person} today={pos.date} /></Section>
+      <Section title="Progress photos"><Photos person={person} today={pos.date} weights={weights} /></Section>
       <Section title="★ Lifts"><Lifts person={person} sessions={sessions} /></Section>
       <Section title="Sessions"><Heat sessions={sessions} /><RecentSessions sessions={sessions} /></Section>
       <Section title="Milestones"><Badges person={person} sessions={sessions} weights={weights} /></Section>
@@ -131,14 +131,21 @@ function useBlobUrl(b?: Blob) {
   useEffect(() => { if (!b) { setU(undefined); return } const x = URL.createObjectURL(b); setU(x); return () => URL.revokeObjectURL(x) }, [b])
   return u
 }
-function Photos({ person, today }: { person: Person; today: string }) {
+function Photos({ person, today, weights }: { person: Person; today: string; weights: WeightRow[] }) {
   const photos = useLive<PhotoRow[]>(() => db.photos.where('person').equals(person).sortBy('date'), [person], [])
   const [pose, setPose] = useState<(typeof POSES)[number]>('front')
   const [cut, setCut] = useState(50)
+  const [beforeId, setBeforeId] = useState<string | null>(null)
+  const box = useRef<HTMLDivElement>(null)
+  const drag = useRef(false)
   const file = useRef<HTMLInputElement>(null)
   const of = photos.filter((p) => p.pose === pose)
-  const before = of[0], after = of.length > 1 ? of[of.length - 1] : undefined
+  const before = of.find((p) => p.id === beforeId) ?? of[0], after = of.length > 1 ? of[of.length - 1] : undefined
   const bu = useBlobUrl(before?.blob), au = useBlobUrl(after?.blob)
+  const kgOn = (date?: string) => { if (!date) return null; let kg: number | null = null; for (const w of weights) { if (w.date <= date) kg = w.kg; else break } return kg }
+  const kb = kgOn(before?.date), ka = kgOn(after?.date)
+  const days = before && after ? diffDays(after.date, before.date) : 0
+  const move = (clientX: number) => { const r = box.current?.getBoundingClientRect(); if (r) setCut(Math.max(0, Math.min(100, ((clientX - r.left) / r.width) * 100))) }
   const add = async (f?: File) => {
     if (!f) return
     const img = await createImageBitmap(f).catch(() => null)
@@ -148,23 +155,32 @@ function Photos({ person, today }: { person: Person; today: string }) {
   }
   return (
     <Card>
-      <div className="flex justify-center"><Segmented id="pose" small value={pose} onChange={setPose} options={POSES.map((p) => ({ value: p, label: p[0].toUpperCase() + p.slice(1) }))} /></div>
-      <div className="relative mt-3 rounded-2xl overflow-hidden bg-s2 aspect-[3/4] grid place-items-center">
-        {!before ? <div className="text-center text-mute px-6"><ImageOff className="mx-auto mb-2" /><div className="text-[14px]">No {pose} photo yet. Same light, same spot each time.</div></div> : <>
-          <img src={au ?? bu} alt={`${pose} — ${after ? 'latest' : 'first'}`} className="absolute inset-0 w-full h-full object-cover" />
-          {after && <div className="absolute inset-0 overflow-hidden" style={{ width: `${cut}%` }}><img src={bu} alt={`${pose} — first`} className="absolute inset-0 h-full object-cover" style={{ width: `${10000 / Math.max(1, cut)}%`, maxWidth: 'none' }} /></div>}
-          {after && <div className="absolute top-0 bottom-0 w-0.5 bg-white/90" style={{ left: `${cut}%` }} />}
-          <span className="absolute left-2 bottom-2 text-[11px] px-2 py-1 rounded-full bg-black/60 text-white num">{fmtDate(before.date, { day: 'numeric', month: 'short', year: '2-digit' })}</span>
-          {after && <span className="absolute right-2 bottom-2 text-[11px] px-2 py-1 rounded-full bg-black/60 text-white num">{fmtDate(after.date, { day: 'numeric', month: 'short', year: '2-digit' })}</span>}
+      <div className="flex justify-center"><Segmented id="pose" small value={pose} onChange={(v) => { setPose(v); setBeforeId(null) }} options={POSES.map((p) => ({ value: p, label: p[0].toUpperCase() + p.slice(1) }))} /></div>
+      <div ref={box} data-testid="compare" className="relative mt-3 rounded-2xl overflow-hidden bg-s2 aspect-[3/4] grid place-items-center touch-none select-none"
+        onPointerDown={(e) => { if (!after) return; drag.current = true; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); move(e.clientX) }}
+        onPointerMove={(e) => { if (drag.current) move(e.clientX) }}
+        onPointerUp={() => { drag.current = false }} onPointerCancel={() => { drag.current = false }}>
+        {!before ? <div className="text-center text-mute px-6"><ImageOff className="mx-auto mb-2" /><div className="text-[14px]">No {pose} photo yet. Same light, same spot each time — then drag to compare.</div></div> : <>
+          <img src={au ?? bu} alt={`${pose} — ${after ? 'now' : 'first'}`} className="absolute inset-0 w-full h-full object-cover" />
+          {after && <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - cut}% 0 0)` }}><img src={bu} alt={`${pose} — before`} className="absolute inset-0 w-full h-full object-cover" /></div>}
+          {after && <div className="absolute top-0 bottom-0 w-[3px] -ml-[1.5px] accent-grad glow pointer-events-none" style={{ left: `${cut}%` }}>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full accent-grad text-[#0a0a0a] grid place-items-center shadow-lg font-bold text-[14px]">⇆</div></div>}
+          <div className="absolute left-2 top-2 rounded-xl bg-black/65 px-2.5 py-1.5 text-white pointer-events-none"><div className="font-display caps text-[13px] font-bold tracking-wide">{after ? 'Before' : 'Day 1'}</div><div className="text-[11px] num opacity-80">{fmtDate(before.date, { day: 'numeric', month: 'short', year: '2-digit' })}{kb ? ` · ${kb} kg` : ''}</div></div>
+          {after && <div className="absolute right-2 top-2 rounded-xl bg-black/65 px-2.5 py-1.5 text-right pointer-events-none"><div className="font-display caps text-[13px] font-bold tracking-wide text-[#c6ff00]">Now</div><div className="text-[11px] num text-white/80">{fmtDate(after.date, { day: 'numeric', month: 'short', year: '2-digit' })}{ka ? ` · ${ka} kg` : ''}</div></div>}
+          {after && <div className="absolute left-1/2 -translate-x-1/2 bottom-2 rounded-full bg-black/70 px-3 py-1.5 text-[12px] text-white num pointer-events-none whitespace-nowrap">{days} days{kb && ka ? ` · ${ka - kb > 0 ? '+' : ''}${(ka - kb).toFixed(1)} kg` : ''}</div>}
         </>}
       </div>
-      {after && <input aria-label="Before / after slider" type="range" min={0} max={100} value={cut} onChange={(e) => setCut(Number(e.target.value))} className="w-full mt-3 h-11 accent-[var(--a1c)]" />}
+      {of.length > 2 && <div className="mt-2 -mx-1 px-1 flex gap-1.5 overflow-x-auto no-scrollbar" aria-label="Compare from">
+        <span className="text-[12px] text-mute self-center shrink-0">Before:</span>
+        {of.slice(0, -1).map((p) => <Chip key={p.id} tone={p.id === before?.id ? 'accent' : 'default'} onClick={() => setBeforeId(p.id)}>{fmtDate(p.date, { day: 'numeric', month: 'short' })}</Chip>)}
+      </div>}
+      {after && <input aria-label="Before / after slider" type="range" min={0} max={100} value={Math.round(cut)} onChange={(e) => setCut(Number(e.target.value))} className="sr-only" />}
       <input ref={file} type="file" accept="image/*" capture="environment" hidden onChange={(e) => { void add(e.target.files?.[0]); e.target.value = '' }} />
       <div className="flex gap-2 mt-3">
         <Btn className="flex-1" onClick={() => file.current?.click()}><Camera size={18} /> Add today’s {pose}</Btn>
         {of.length > 0 && <Btn kind="soft" label="Delete latest photo" onClick={() => void db.photos.delete(of[of.length - 1].id)}><Trash2 size={16} /></Btn>}
       </div>
-      <div className="text-[12px] text-mute mt-2 flex items-center gap-1.5"><Lock size={12} /> Stored only on this device (IndexedDB). Never uploaded.</div>
+      <div className="text-[12px] text-mute mt-2 flex items-center gap-1.5"><Lock size={12} /> Stored only on this device. Never uploaded. Take one every 2 weeks.</div>
     </Card>
   )
 }

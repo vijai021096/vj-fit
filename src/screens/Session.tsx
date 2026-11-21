@@ -16,6 +16,8 @@ import { chime, keepAwake } from '../lib/audio'
 import { shareCard } from '../lib/share'
 import { fmtDate } from '../engine/calendar'
 import { BodyMap } from '../components/BodyMap'
+import { recovery } from '../lib/recovery'
+import { MUSCLE_INFO as MI } from '../data/common'
 import { ExerciseMedia } from '../components/Media'
 import { fmtDuration } from '../lib/cardio'
 import { RoutineSheet } from '../components/RoutineSheet'
@@ -197,6 +199,7 @@ function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Activ
   const step = steps[idx]
   const ex = EX[step.ex]
   const hist = past[step.ex] ?? []
+  const rec = useMemo(() => recovery(prior), [prior])
   const sug: Suggestion | null = step.kind === 'lift' && ex
     ? (a.isDay0 ? { kind: 'first', weight: null, text: FIRST_TIME } : suggest(hist, step, ex.loadType, { reset: modName === 'Reset' }))
     : null
@@ -305,7 +308,11 @@ function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Activ
                   className="mt-2 w-full min-h-[48px] rounded-2xl border border-line bg-s2 text-[14px] font-medium inline-flex items-center justify-center gap-2"><Check size={16} /> {step.gate.label}</button>}
                 <div className="card p-3 mt-3">
                   <BodyMap both key={step.ex} primary={ex.muscles.primary} secondary={ex.muscles.secondary} height={230} info />
-                  <div className="text-center text-[12px] text-mute mt-1">Tap a muscle to see what it does</div>
+                  <div className="flex flex-wrap justify-center gap-1.5 mt-2" data-testid="target-muscles">
+                    {ex.muscles.primary.map((m) => { const r = rec[m]; return <span key={m} className="text-[12px] px-2 py-1 rounded-full bg-a1/15 border border-a1/40 accent-text font-semibold">{MI[m].name}{r && r.state !== 'fresh' ? <span className={r.state === 'fatigued' ? ' text-[#ff6b00]' : ' text-[#ffc400]'}> · {r.state === 'fatigued' ? 'still sore' : 'recovering'}</span> : ''}</span> })}
+                    {ex.muscles.secondary.map((m) => <span key={m} className="text-[12px] px-2 py-1 rounded-full bg-s2 border border-line/60 text-mute">{MI[m].name}</span>)}
+                  </div>
+                  <div className="text-center text-[12px] text-mute mt-1">Bright = main target · grey = helpers. Tap a muscle to see what it does</div>
                 </div>
                 <div className="mt-3 space-y-2">
                   {([['howTo', 'How to', ex.howTo], ['cues', 'Cues', ex.cues], ['mistakes', 'Common mistakes', ex.mistakes], ['breathing', 'Breathing & safety', [ex.breathing, ex.safety]]] as const).map(([k, label, list]) => (
@@ -597,7 +604,7 @@ function Finish({ a, steps, onDone }: { a: Active; steps: Step[]; onDone: () => 
         </div>
       </div>
       <div className="shrink-0 p-4 safe-b glass border-t border-line/60 flex gap-2">
-        {!a.isDay0 && <Btn kind="soft" label="Share card" onClick={() => shareCard({ name: NAME[person], title: a.title, date: fmtDate(a.date, { weekday: 'long', day: 'numeric', month: 'long' }), minutes, volume, sets: setsDone, prs: a.prs.length, c1: css.getPropertyValue('--a1c').trim() || '#4c8dff', c2: css.getPropertyValue('--a2c').trim() || '#22d3ee' })}><Share2 size={18} /></Btn>}
+        {!a.isDay0 && <Btn kind="soft" label="Share card" onClick={() => shareCard({ name: NAME[person], title: a.title, date: fmtDate(a.date, { weekday: 'long', day: 'numeric', month: 'long' }), minutes, volume, sets: setsDone, prs: a.prs.length, c1: css.getPropertyValue('--a1c').trim() || '#c6ff00', c2: css.getPropertyValue('--a2c').trim() || '#ff6b00' })}><Share2 size={18} /></Btn>}
         <Btn className="flex-1" disabled={saving} onClick={save}><Check size={18} /> Save session</Btn>
       </div>
     </>

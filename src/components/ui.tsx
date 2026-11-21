@@ -40,10 +40,10 @@ export function Ring({ value, size = 64, stroke = 7, children, label }: { value:
   const id = `g${size}${stroke}`
   return (
     <div className="relative grid place-items-center" style={{ width: size, height: size }} role="img" aria-label={label ? `${label} ${Math.round(v * 100)}%` : undefined}>
-      <svg width={size} height={size} className="-rotate-90">
+      <svg width={size} height={size} className="-rotate-90 overflow-visible">
         <defs><linearGradient id={id} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="var(--a1c)" /><stop offset="1" stopColor="var(--a2c)" /></linearGradient></defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--s3))" strokeWidth={stroke} />
-        <motion.circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={`url(#${id})`} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c}
+        <motion.circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={`url(#${id})`} strokeWidth={stroke} strokeLinecap="round" strokeDasharray={c} className={v > 0.02 ? 'glow' : undefined}
           initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c * (1 - v) }} transition={{ duration: 0.9, ease: 'easeOut' }} />
       </svg>
       <div className="absolute inset-0 grid place-items-center">{children}</div>

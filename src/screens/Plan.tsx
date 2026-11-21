@@ -7,7 +7,7 @@ import { usePosition, useSessions } from '../lib/hooks'
 import { PROGRAMS, muscleSets, resolveDay0, resolveSession, restText, rxText, weekMod } from '../engine/program'
 import { dateOf, fmtDate } from '../engine/calendar'
 import { weekKeys } from '../lib/history'
-import { exName } from '../data/exercises'
+import { EX, exName } from '../data/exercises'
 import { MUSCLE_INFO } from '../data/common'
 import { BodyMap } from '../components/BodyMap'
 import { Card, Chip, Section, Segmented, cx, item, stagger } from '../components/ui'
@@ -102,6 +102,7 @@ function StepRow({ s, first, onOpen }: { s: Step; first: boolean; onOpen: () => 
         <span className="w-8 h-8 rounded-xl bg-s2 grid place-items-center text-[12px] font-semibold text-mute shrink-0">{s.label && s.kind === 'lift' ? s.label : s.star ? <Star size={14} className="accent-text" fill="currentColor" /> : '·'}</span>
         <span className="flex-1 min-w-0">
           <span className="block font-medium text-[15px] truncate">{s.kind === 'lift' ? exName(s.ex) : s.label}</span>
+          {s.kind === 'lift' && EX[s.ex] && <span className="flex gap-1 mt-0.5 flex-wrap">{EX[s.ex].muscles.primary.map((m) => <span key={m} className="text-[10.5px] px-1.5 py-[1px] rounded-md bg-a1/15 accent-text font-semibold uppercase tracking-wide">{MUSCLE_INFO[m].name}</span>)}{EX[s.ex].muscles.secondary.slice(0, 2).map((m) => <span key={m} className="text-[10.5px] px-1.5 py-[1px] rounded-md bg-s3 text-mute uppercase tracking-wide">{MUSCLE_INFO[m].name}</span>)}</span>}
           <span className="block text-[12px] text-mute num truncate">{s.kind === 'lift' ? <>{rxText(s)}{s.rest > 0 && <> · <Timer size={11} className="inline -mt-0.5" /> {restText(s.rest)}</>}{s.note ? ` · ${s.note}` : ''}</> : <>{s.minutes} min{s.note ? ` · ${s.note}` : ''}{s.intervals ? ` · ${s.intervals.rounds} rounds` : ''}</>}</span>
         </span>
         {s.kind !== 'mobility' && <ChevronRight size={16} className="text-mute shrink-0" />}

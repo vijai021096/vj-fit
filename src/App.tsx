@@ -47,7 +47,7 @@ export default function App() {
     const apply = () => {
       const light = theme === 'light' || (theme === 'system' && mq.matches)
       root.classList.toggle('light', light)
-      document.querySelector('meta[name=theme-color]')?.setAttribute('content', light ? '#F4F4F8' : '#0B0B0F')
+      document.querySelector('meta[name=theme-color]')?.setAttribute('content', light ? '#F4F4F8' : '#0A0A0A')
     }
     apply(); mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
@@ -85,8 +85,8 @@ export default function App() {
             <div className="contents" {...(full ? ({ inert: '' } as object) : {})}>
             <header className="safe-t shrink-0 glass border-b border-line/50 z-20">
               <div className="flex items-center gap-2 px-4 h-14">
-                <div className="display text-[22px] font-bold accent-grad-text select-none" aria-label="VJ Fit">VJ</div>
-                <div className="flex-1 text-[15px] font-semibold text-mute">Fat loss · muscle</div>
+                <div className="display text-[26px] font-extrabold italic accent-grad-text select-none tracking-tight" aria-label="VJ Fit">VJ</div>
+                <div className="flex-1 caps font-display text-[15px] font-semibold text-mute">Fat loss · Muscle</div>
                 <button type="button" aria-label="Settings" onClick={() => open({ type: 'settings' })} className="relative w-11 h-11 grid place-items-center rounded-full bg-s2 border border-line/60"><Cog size={18} />{sync.linked && <span data-testid="sync-dot" data-state={sync.state} className={cx('absolute top-2 right-2 w-2.5 h-2.5 rounded-full border border-bg', sync.state === 'idle' ? 'bg-ok' : sync.state === 'syncing' ? 'bg-a1 animate-pulse' : 'bg-warn')} />}</button>
               </div>
             </header>

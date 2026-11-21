@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Check, GlassWater, Pill, Plus, Repeat, Send, ShoppingBasket, Trash2 } from 'lucide-react'
 import type { MealOption } from '../data/meals.types'
+import { QUICK_CATS, QUICK_FOODS, type QuickCat } from '../data/quickfoods'
 import { useStore, usePerson } from '../store'
 import { NAME, PEOPLE, WD_LABEL, WEEKDAYS, dietOf } from '../types'
 import { patchDay, type Extra } from '../db'
@@ -211,24 +212,30 @@ function Grocery({ week, setWeek }: { week: number; setWeek: (w: number) => void
   )
 }
 
-const PRESETS: { label: string; kcal: number; protein: number }[] = [
-  { label: 'Samosa', kcal: 260, protein: 5 }, { label: 'Chai + biscuits', kcal: 120, protein: 2 }, { label: 'Banana', kcal: 105, protein: 1 },
-  { label: 'Boiled egg', kcal: 78, protein: 6 }, { label: 'Fruit bowl', kcal: 90, protein: 1 }, { label: 'Sweet / dessert', kcal: 250, protein: 3 },
-  { label: 'Restaurant meal', kcal: 700, protein: 25 }, { label: 'Protein shake', kcal: 150, protein: 25 },
-]
-
 function AddExtra({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (e: Extra) => void }) {
   const [label, setLabel] = useState('')
   const [kcal, setKcal] = useState(200)
   const [protein, setProtein] = useState(5)
+  const [cat, setCat] = useState<QuickCat>('Non-veg')
+  const [q, setQ] = useState('')
+  const [qty, setQty] = useState(1)
+  const shown = q.trim() ? QUICK_FOODS.filter((f) => f.label.toLowerCase().includes(q.trim().toLowerCase())) : QUICK_FOODS.filter((f) => f.cat === cat)
   return (
     <Sheet open={open} onClose={onClose} title="I ate something else">
-      <p className="text-[14px] text-mute mb-3">Pick a quick one or type your own. Rough numbers are fine.</p>
-      <div className="flex flex-wrap gap-2">{PRESETS.map((p) => <button key={p.label} type="button" onClick={() => { setLabel(p.label); setKcal(p.kcal); setProtein(p.protein) }} className={cx('min-h-[40px] px-3 rounded-full border text-[13px]', label === p.label ? 'border-a1/60 bg-a1/15' : 'border-line/60 bg-s2')}>{p.label}</button>)}</div>
-      <input aria-label="What did you eat" placeholder="What was it?" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={40} className="mt-3 w-full bg-s2 rounded-xl px-3 min-h-[48px] text-[15px]" />
-      <div className="flex items-center justify-between mt-4"><span className="text-[14px]">Calories</span><Stepper value={kcal} onChange={setKcal} step={25} min={0} max={3000} unit="kcal" label="Calories" /></div>
+      <input aria-label="Search foods" placeholder="Search: biryani, parotta, beer…" value={q} onChange={(e) => setQ(e.target.value)} className="w-full bg-s2 rounded-xl px-3 min-h-[46px] text-[15px] border border-line/60" />
+      {!q.trim() && <div className="mt-2 -mx-1 px-1 flex gap-1.5 overflow-x-auto no-scrollbar">{QUICK_CATS.map((c) => <Chip key={c} tone={c === cat ? 'accent' : 'default'} onClick={() => setCat(c)}>{c}</Chip>)}</div>}
+      <div className="mt-2 max-h-[34vh] overflow-y-auto no-scrollbar rounded-2xl border border-line/60 divide-y divide-line/50" data-testid="quick-foods">
+        {shown.length === 0 && <div className="p-3 text-[13px] text-mute">No match. Type the name below and set rough numbers.</div>}
+        {shown.map((f) => (
+          <button key={f.label} type="button" onClick={() => { setLabel(f.label); setKcal(f.kcal); setProtein(f.protein); setQty(1) }} className={cx('w-full min-h-[48px] px-3 flex items-center gap-2 text-left', label === f.label && 'bg-a1/10')}>
+            <span className="flex-1 text-[14px]">{f.label}</span><span className="text-[12px] text-mute num">{f.kcal} kcal · {f.protein} g</span>
+          </button>))}
+      </div>
+      <input aria-label="What did you eat" placeholder="What was it?" value={label} onChange={(e) => setLabel(e.target.value)} maxLength={40} className="mt-3 w-full bg-s2 rounded-xl px-3 min-h-[46px] text-[15px]" />
+      <div className="flex items-center justify-between mt-3"><span className="text-[14px]">Servings</span><Stepper value={qty} onChange={setQty} step={0.5} min={0.5} max={5} label="Servings" /></div>
+      <div className="flex items-center justify-between mt-3"><span className="text-[14px]">Calories</span><Stepper value={kcal} onChange={setKcal} step={25} min={0} max={3000} unit="kcal" label="Calories" /></div>
       <div className="flex items-center justify-between mt-3"><span className="text-[14px]">Protein</span><Stepper value={protein} onChange={setProtein} step={1} min={0} max={150} unit="g" label="Protein" /></div>
-      <Btn className="w-full mt-5" onClick={() => { onAdd({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, label: label.trim() || 'Something else', kcal, protein }); setLabel(''); onClose() }}>Add to today</Btn>
+      <Btn className="w-full mt-5" onClick={() => { onAdd({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, label: `${label.trim() || 'Something else'}${qty !== 1 ? ` ×${qty}` : ''}`, kcal: Math.round(kcal * qty), protein: Math.round(protein * qty) }); setLabel(''); setQ(''); setQty(1); onClose() }}>Add {Math.round(kcal * qty)} kcal to today</Btn>
     </Sheet>
   )
 }
