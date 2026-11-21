@@ -205,7 +205,7 @@ export function Insights() {
         <p className="text-[14px] text-mute">{NAME[who]}'s insights for the last…</p>
         <div className="flex flex-wrap gap-2 mt-3" role="radiogroup" aria-label="Number of days">
           {PDF_DAYS.map((d) => <button key={d} type="button" role="radio" aria-checked={dlDays === String(d)} onClick={() => setDlDays(String(d))}
-            className={cx('min-h-[44px] px-4 rounded-full border text-[14px] font-semibold', dlDays === String(d) ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s2 border-line/60 text-ink')}>{d} days</button>)}
+            className={cx('min-h-[44px] px-4 rounded-full border text-[14px] font-semibold', dlDays === String(d) ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s2 border-line/60 text-ink')}>{d} days</button>)}
         </div>
         <label className="flex items-center gap-3 mt-4 text-[14px]">
           <span className="text-mute">Or a number of days</span>

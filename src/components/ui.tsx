@@ -8,7 +8,7 @@ export const spring = { type: 'spring' as const, stiffness: 420, damping: 34 }
 export function Btn({ children, onClick, kind = 'primary', className, disabled, label }: { children: ReactNode; onClick?: () => void; kind?: 'primary' | 'ghost' | 'soft' | 'danger'; className?: string; disabled?: boolean; label?: string }) {
   const base = 'min-h-[48px] px-5 rounded-2xl font-semibold text-[15px] inline-flex items-center justify-center gap-2 disabled:opacity-40 active:scale-[0.98] transition-transform'
   const kinds = {
-    primary: 'accent-grad text-[#08080c] shadow-[0_10px_30px_-12px_var(--a1c)]',
+    primary: 'accent-grad text-[color:var(--on-accent)] shadow-[0_10px_30px_-12px_var(--a1c)]',
     ghost: 'border border-line text-ink bg-transparent',
     soft: 'bg-s2 text-ink border border-line/60',
     danger: 'bg-red-500/15 text-red-300 border border-red-500/30',
@@ -95,7 +95,7 @@ export function Segmented<T extends string>({ value, options, onChange, id, smal
     <div className="inline-flex p-1 rounded-full bg-s2 border border-line/70" role="tablist">
       {options.map((o) => (
         <button key={o.value} role="tab" aria-selected={value === o.value} type="button" onClick={() => onChange(o.value)}
-          className={cx('relative rounded-full font-semibold', small ? 'px-3 min-h-[36px] text-[13px]' : 'px-4 min-h-[40px] text-[14px]', value === o.value ? 'text-[#08080c]' : 'text-mute')}>
+          className={cx('relative rounded-full font-semibold', small ? 'px-3 min-h-[36px] text-[13px]' : 'px-4 min-h-[40px] text-[14px]', value === o.value ? 'text-[color:var(--on-accent)]' : 'text-mute')}>
           {value === o.value && <motion.span layoutId={`seg-${id}`} className="absolute inset-0 rounded-full accent-grad" transition={spring} />}
           <span className="relative">{o.label}</span>
         </button>

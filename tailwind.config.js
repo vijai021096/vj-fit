@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Barlow Condensed"', 'Impact', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         sans: ['"Inter Variable"', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {

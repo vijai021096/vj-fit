@@ -4,6 +4,8 @@ import type { Person, Profile, ProgramDef, SetLog } from './types'
 import type { MealPlan } from './data/meals.types'
 import { DEFAULT_START } from './engine/calendar'
 
+export type Palette = 'midnight' | 'gold' | 'red' | 'neon'
+export const PALETTES: { value: Palette; label: string }[] = [{ value: 'midnight', label: 'Midnight' }, { value: 'gold', label: 'Gold' }, { value: 'red', label: 'Red' }, { value: 'neon', label: 'Neon' }]
 export type Tab = 'today' | 'plan' | 'diet' | 'progress' | 'library'
 export type Overlay =
   | null
@@ -40,7 +42,7 @@ interface State {
   me: Person | null
   profiles: Record<Person, Profile>
   avatars: Partial<Record<Person, string>>
-  settings: { programStart: string; mergeDay0: boolean; theme: 'dark' | 'light' | 'system'; sounds: boolean; creatine: boolean }
+  settings: { programStart: string; mergeDay0: boolean; theme: 'dark' | 'light' | 'system'; sounds: boolean; creatine: boolean; palette?: Palette }
   flags: { disclaimer: boolean; install: boolean; rir: boolean; backupNudge: number; lastBackup: number; reviewDone: Record<Person, number>; phase: 'bulk' | 'cut' }
   badges: Record<Person, Record<string, string>>
   grocery: Record<string, boolean>
@@ -70,7 +72,7 @@ export const useStore = create<State>()(
       me: 'vijai',
       profiles: { vijai: blank('male') },
       avatars: {},
-      settings: { programStart: DEFAULT_START, mergeDay0: false, theme: 'dark', sounds: true, creatine: true },
+      settings: { programStart: DEFAULT_START, mergeDay0: false, theme: 'dark', sounds: true, creatine: true, palette: 'midnight' },
       flags: { disclaimer: false, install: false, rir: false, backupNudge: 0, lastBackup: 0, reviewDone: { vijai: 1 }, phase: 'cut' },
       badges: { vijai: {} },
       grocery: {},

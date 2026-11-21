@@ -84,7 +84,7 @@ export function Diet() {
         </motion.div>
         <motion.div variants={item} className="mt-2 grid grid-cols-7 gap-1" role="tablist" aria-label="Day">
           {WEEKDAYS.map((wd, i) => (
-            <button key={wd} role="tab" aria-selected={dIdx === i} type="button" onClick={() => { setDIdx(i); setPreview({}) }} className={cx('min-h-[44px] rounded-xl text-[13px] font-semibold border', dIdx === i ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s1 border-line/60 text-mute')}>{WD_LABEL[wd][0]}{WD_LABEL[wd][1]}{week === todayW && i === todayD && dIdx !== i ? '•' : ''}</button>))}
+            <button key={wd} role="tab" aria-selected={dIdx === i} type="button" onClick={() => { setDIdx(i); setPreview({}) }} className={cx('min-h-[44px] rounded-xl text-[13px] font-semibold border', dIdx === i ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s1 border-line/60 text-mute')}>{WD_LABEL[wd][0]}{WD_LABEL[wd][1]}{week === todayW && i === todayD && dIdx !== i ? '•' : ''}</button>))}
         </motion.div>
         {!isToday && <motion.p variants={item} className="text-[12px] text-mute mt-2 px-1">Preview — you can tick meals on today’s menu. <button type="button" className="underline accent-text min-h-[32px]" onClick={() => { setWeek(todayW); setDIdx(todayD) }}>Back to today</button></motion.p>}
 
@@ -111,7 +111,7 @@ export function Diet() {
                   </div>
                   <div className="flex flex-col gap-1.5 shrink-0">
                     {isToday && <motion.button whileTap={{ scale: 0.86 }} type="button" aria-pressed={eaten} aria-label={eaten ? `${s.label} eaten — tap to undo` : `Mark ${s.label} as eaten`} onClick={() => void patchDay(person, pos.date, (x) => { x.eaten[s.id] = !x.eaten[s.id] })}
-                      className={cx('w-12 h-12 rounded-2xl grid place-items-center border', eaten ? 'accent-grad border-transparent text-[#08080c]' : 'border-line bg-s2')}><Check size={20} strokeWidth={3} /></motion.button>}
+                      className={cx('w-12 h-12 rounded-2xl grid place-items-center border', eaten ? 'accent-grad border-transparent text-[color:var(--on-accent)]' : 'border-line bg-s2')}><Check size={20} strokeWidth={3} /></motion.button>}
                     {s.options.length > 1 && <button type="button" aria-label={`Swap ${s.label}`} onClick={() => setSwapSlot(s.id)} className="w-12 h-12 rounded-2xl grid place-items-center border border-line bg-s2"><Repeat size={18} /></button>}
                   </div>
                 </div>
@@ -149,12 +149,12 @@ export function Diet() {
         {isToday && <Section title="Water" right={<span className="text-[13px] text-mute num">{(day.water * GLASS).toFixed(2).replace(/\.?0+$/, '')} / ~{waterTarget(person, profile)} L</span>}>
           <Card><div className="grid grid-cols-7 gap-1.5">{Array.from({ length: glasses }, (_, i) => (
             <button key={i} type="button" aria-label={`Glass ${i + 1} of ${glasses}`} aria-pressed={i < day.water} onClick={() => void patchDay(person, pos.date, (x) => { x.water = x.water === i + 1 ? i : i + 1 })}
-              className={cx('h-12 rounded-xl grid place-items-center border', i < day.water ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s2 border-line/60 text-mute')}><GlassWater size={18} /></button>))}</div>
+              className={cx('h-12 rounded-xl grid place-items-center border', i < day.water ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s2 border-line/60 text-mute')}><GlassWater size={18} /></button>))}</div>
             <div className="text-[12px] text-mute mt-2">One glass ≈ 250 ml.</div></Card></Section>}
 
         {creatine && isToday && <Section title="Supplements"><Card>
           <button type="button" aria-pressed={!!day.creatine} onClick={() => void patchDay(person, pos.date, (x) => { x.creatine = !x.creatine })} className="w-full flex items-center gap-3 text-left min-h-[48px]">
-            <span className={cx('w-10 h-10 rounded-xl grid place-items-center', day.creatine ? 'accent-grad text-[#08080c]' : 'bg-s2 text-mute')}>{day.creatine ? <Check size={18} /> : <Pill size={18} />}</span>
+            <span className={cx('w-10 h-10 rounded-xl grid place-items-center', day.creatine ? 'accent-grad text-[color:var(--on-accent)]' : 'bg-s2 text-mute')}>{day.creatine ? <Check size={18} /> : <Pill size={18} />}</span>
             <span><span className="block font-medium">Creatine monohydrate 3–5 g</span><span className="block text-[12px] text-mute">Any time of day. Optional.</span></span>
           </button>
           <p className="text-[12px] text-mute mt-2">Check with a doctor if you have kidney issues.</p></Card></Section>}
@@ -201,7 +201,7 @@ function Grocery({ week, setWeek }: { week: number; setWeek: (w: number) => void
             const on = !!checked[key(i.id)]
             return (
               <button key={i.id} type="button" aria-pressed={on} onClick={() => set((s) => { s.grocery[key(i.id)] = !on })} className="w-full min-h-[52px] px-2.5 flex items-center gap-3 text-left rounded-xl active:bg-s2">
-                <span className={cx('w-7 h-7 rounded-lg grid place-items-center border shrink-0', on ? 'accent-grad border-transparent text-[#08080c]' : 'border-line')}>{on && <Check size={16} strokeWidth={3} />}</span>
+                <span className={cx('w-7 h-7 rounded-lg grid place-items-center border shrink-0', on ? 'accent-grad border-transparent text-[color:var(--on-accent)]' : 'border-line')}>{on && <Check size={16} strokeWidth={3} />}</span>
                 <span className={cx('flex-1 text-[15px]', on && 'line-through text-mute')}>{i.name}</span>
                 <span className="text-[13px] text-mute num">{i.label}</span>
               </button>)

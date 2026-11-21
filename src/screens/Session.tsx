@@ -103,7 +103,7 @@ function Intro({ a }: { a: Active }) {
   const tog = (k: string) => patch((x) => { x.checks[k] = !x.checks[k] })
   const Row = ({ k, label }: { k: string; label: string }) => (
     <button type="button" onClick={() => tog(k)} className="w-full min-h-[52px] flex items-center gap-3 text-left px-3 rounded-2xl bg-s2 border border-line/60" aria-pressed={!!a.checks[k]}>
-      <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', a.checks[k] ? 'accent-grad border-transparent text-[#08080c]' : 'border-line')}>{a.checks[k] && <Check size={16} />}</span>
+      <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', a.checks[k] ? 'accent-grad border-transparent text-[color:var(--on-accent)]' : 'border-line')}>{a.checks[k] && <Check size={16} />}</span>
       <span className={cx('text-[15px]', a.checks[k] && 'text-mute line-through')}>{label}</span>
     </button>
   )
@@ -162,7 +162,7 @@ function Warmup({ a, steps, kind, past }: { a: Active; steps: Step[]; kind: stri
           <h3 className="display font-semibold mt-5 mb-2">Then</h3>
           <div className="space-y-2">{drills.map((d, i) => (
             <button key={d} type="button" onClick={() => tog(`wu${i}`)} aria-pressed={!!a.checks[`wu${i}`]} className="w-full min-h-[52px] flex items-center gap-3 text-left px-3 rounded-2xl bg-s2 border border-line/60">
-              <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', a.checks[`wu${i}`] ? 'accent-grad border-transparent text-[#08080c]' : 'border-line')}>{a.checks[`wu${i}`] && <Check size={16} />}</span>
+              <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', a.checks[`wu${i}`] ? 'accent-grad border-transparent text-[color:var(--on-accent)]' : 'border-line')}>{a.checks[`wu${i}`] && <Check size={16} />}</span>
               <RoutineImage id={ROUTINE_ID[d]} person={person} className="w-16 h-16" />
               <span className="text-[15px]">{d}</span>
             </button>))}</div>
@@ -309,7 +309,7 @@ function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Activ
                 <div className="card p-3 mt-3">
                   <BodyMap both key={step.ex} primary={ex.muscles.primary} secondary={ex.muscles.secondary} height={230} info />
                   <div className="flex flex-wrap justify-center gap-1.5 mt-2" data-testid="target-muscles">
-                    {ex.muscles.primary.map((m) => { const r = rec[m]; return <span key={m} className="text-[12px] px-2 py-1 rounded-full bg-a1/15 border border-a1/40 accent-text font-semibold">{MI[m].name}{r && r.state !== 'fresh' ? <span className={r.state === 'fatigued' ? ' text-[#ff6b00]' : ' text-[#ffc400]'}> · {r.state === 'fatigued' ? 'still sore' : 'recovering'}</span> : ''}</span> })}
+                    {ex.muscles.primary.map((m) => { const r = rec[m]; return <span key={m} className="text-[12px] px-2 py-1 rounded-full bg-a1/15 border border-a1/40 accent-text font-semibold">{MI[m].name}{r && r.state !== 'fresh' ? <span className={r.state === 'fatigued' ? ' text-[color:var(--fatigue)]' : ' text-[color:var(--recover)]'}> · {r.state === 'fatigued' ? 'still sore' : 'recovering'}</span> : ''}</span> })}
                     {ex.muscles.secondary.map((m) => <span key={m} className="text-[12px] px-2 py-1 rounded-full bg-s2 border border-line/60 text-mute">{MI[m].name}</span>)}
                   </div>
                   <div className="text-center text-[12px] text-mute mt-1">Bright = main target · grey = helpers. Tap a muscle to see what it does</div>
@@ -349,7 +349,7 @@ function Work({ a, kind, steps, rir, modName, past, prior, loading }: { a: Activ
                   </div>
                   {step.hold && !r.done && <button type="button" aria-label={`Start ${r.r} second hold`} onClick={() => startHold(i)} className="w-11 h-12 grid place-items-center rounded-xl bg-s2 border border-line/70 shrink-0"><Timer size={18} /></button>}
                   <motion.button type="button" aria-label={r.done ? `Set ${i + 1} done — tap to undo` : `Mark set ${i + 1} done`} aria-pressed={r.done} whileTap={{ scale: 0.86 }} onClick={() => tick(i)}
-                    className={cx('ml-auto w-12 h-12 rounded-2xl grid place-items-center shrink-0 border', r.done ? 'accent-grad border-transparent text-[#08080c]' : 'border-line bg-s1')}>
+                    className={cx('ml-auto w-12 h-12 rounded-2xl grid place-items-center shrink-0 border', r.done ? 'accent-grad border-transparent text-[color:var(--on-accent)]' : 'border-line bg-s1')}>
                     <motion.span key={String(r.done)} initial={{ scale: 0.4, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={spring}><Check size={22} strokeWidth={3} /></motion.span>
                   </motion.button>
                 </motion.div>
@@ -536,7 +536,7 @@ function Cooldown() {
             <Btn kind="soft" onClick={() => setI(i + 1)}><SkipForward size={18} /> Next</Btn>
           </div>}
         </div>
-        <ol className="mt-4 space-y-1.5">{COOLDOWN.map((s, j) => <li key={s} className={cx('flex items-center gap-2 text-[14px]', j < i ? 'text-mute line-through' : j === i ? 'font-medium' : 'text-mute')}><span className={cx('w-5 h-5 rounded-full grid place-items-center text-[11px]', j < i ? 'accent-grad text-[#08080c]' : 'bg-s3')}>{j < i ? <Check size={12} /> : j + 1}</span>{s}</li>)}</ol>
+        <ol className="mt-4 space-y-1.5">{COOLDOWN.map((s, j) => <li key={s} className={cx('flex items-center gap-2 text-[14px]', j < i ? 'text-mute line-through' : j === i ? 'font-medium' : 'text-mute')}><span className={cx('w-5 h-5 rounded-full grid place-items-center text-[11px]', j < i ? 'accent-grad text-[color:var(--on-accent)]' : 'bg-s3')}>{j < i ? <Check size={12} /> : j + 1}</span>{s}</li>)}</ol>
       </div>
       <div className="shrink-0 p-4 safe-b glass border-t border-line/60 flex gap-2">
         <Btn kind="soft" label="Back to workout" onClick={() => patch((x) => { x.phase = 'work' })}><ArrowLeft size={18} /> Workout</Btn>
@@ -599,7 +599,7 @@ function Finish({ a, steps, onDone }: { a: Active; steps: Step[]; onDone: () => 
         <div className="card p-4 mt-3 space-y-3">
           {([['Mood', mood, setMood], ['Energy', energy, setEnergy]] as const).map(([l, v, f]) => (
             <div key={l}><div className="text-[13px] text-mute mb-1.5">{l}</div>
-              <div className="flex gap-2" role="radiogroup" aria-label={l}>{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" role="radio" aria-checked={v === n} aria-label={`${l} ${n} of 5`} onClick={() => f(n)} className={cx('flex-1 h-12 rounded-xl border font-semibold num', v === n ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s2 border-line/60')}>{n}</button>)}</div></div>))}
+              <div className="flex gap-2" role="radiogroup" aria-label={l}>{[1, 2, 3, 4, 5].map((n) => <button key={n} type="button" role="radio" aria-checked={v === n} aria-label={`${l} ${n} of 5`} onClick={() => f(n)} className={cx('flex-1 h-12 rounded-xl border font-semibold num', v === n ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s2 border-line/60')}>{n}</button>)}</div></div>))}
           <textarea aria-label="Notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes — how did it feel?" rows={2} className="w-full rounded-xl bg-s2 border border-line/60 p-3 outline-none" />
         </div>
       </div>

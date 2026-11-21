@@ -55,7 +55,7 @@ export function ProfileForm({ person, sheet }: { person: Person; sheet?: boolean
   const body = (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <button type="button" aria-label="Add a photo (optional)" onClick={() => file.current?.click()} className="relative w-16 h-16 rounded-2xl accent-grad grid place-items-center overflow-hidden text-[#08080c] display text-[30px] font-bold">
+        <button type="button" aria-label="Add a photo (optional)" onClick={() => file.current?.click()} className="relative w-16 h-16 rounded-2xl accent-grad grid place-items-center overflow-hidden text-[color:var(--on-accent)] display text-[30px] font-bold">
           {avatars[person] ? <img src={avatars[person]} alt="" className="w-full h-full object-cover" /> : NAME[person][0]}
           <span className="absolute bottom-0 right-0 w-6 h-6 rounded-tl-xl bg-black/60 text-white grid place-items-center"><Camera size={12} /></span>
         </button>
@@ -107,7 +107,7 @@ export function InstallGuide({ open }: { open: boolean }) {
       <p className="text-[14px] text-mute mb-4">Installing keeps your logs safer and makes the app work in airplane mode.</p>
       <ol className="space-y-3">{steps.map((s, i) => (
         <motion.li key={i} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }} className="flex gap-3 items-start">
-          <div className={cx('w-12 h-12 rounded-2xl grid place-items-center shrink-0', i === 1 || i === 2 ? 'accent-grad text-[#08080c]' : 'bg-s2 border border-line/60')}>{s.icon}</div>
+          <div className={cx('w-12 h-12 rounded-2xl grid place-items-center shrink-0', i === 1 || i === 2 ? 'accent-grad text-[color:var(--on-accent)]' : 'bg-s2 border border-line/60')}>{s.icon}</div>
           <div><div className="font-semibold text-[15px]">{i + 1}. {s.t}</div><div className="text-[13px] text-mute">{s.d}</div></div>
         </motion.li>))}</ol>
       <Btn className="w-full mt-5" onClick={close}>Got it</Btn>

@@ -2,22 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
-@property --a1c { syntax: '<color>'; inherits: true; initial-value: #c6ff00; }
-@property --a2c { syntax: '<color>'; inherits: true; initial-value: #ff6b00; }
-@property --atc { syntax: '<color>'; inherits: true; initial-value: #c6ff00; }
+@property --a1c { syntax: '<color>'; inherits: true; initial-value: #3b82f6; }
+@property --a2c { syntax: '<color>'; inherits: true; initial-value: #8b5cf6; }
+@property --atc { syntax: '<color>'; inherits: true; initial-value: #7aa7ff; }
 
+/* ── Themes: set on <html data-theme="…">. Default = midnight. ── */
 :root {
-  /* NEON GYM — near-black, electric lime → orange */
-  --bg: 10 10 10; --s1: 20 20 20; --s2: 28 28 28; --s3: 44 44 44; --line: 48 48 48;
-  --ink: 245 245 240; --mute: 150 150 145; --ok: 198 255 0; --warn: 255 107 0;
-  --a1c: #c6ff00; --a2c: #ff6b00; --atc: #c6ff00;
-  --a1: 198 255 0; --a2: 255 107 0;
+  --bg: 11 15 26; --s1: 18 24 39; --s2: 26 33 52; --s3: 40 49 74; --line: 44 54 80;
+  --ink: 240 244 255; --mute: 148 160 190; --ok: 52 211 153; --warn: 251 191 36;
+  --a1c: #3b82f6; --a2c: #8b5cf6; --atc: #7aa7ff; --on-accent: #ffffff;
+  --a1: 59 130 246; --a2: 139 92 246;
+  --fresh: #34d399; --recover: #fbbf24; --fatigue: #f87171; --flame: #fb923c;
+  --font-display: 'Bricolage Grotesque Variable';
   transition: --a1c 0.6s ease, --a2c 0.6s ease, --atc 0.6s ease;
   color-scheme: dark;
 }
+:root[data-theme='neon'] {
+  --bg: 10 10 10; --s1: 20 20 20; --s2: 28 28 28; --s3: 44 44 44; --line: 48 48 48;
+  --ink: 245 245 240; --mute: 150 150 145; --ok: 198 255 0; --warn: 255 107 0;
+  --a1c: #c6ff00; --a2c: #ff6b00; --atc: #c6ff00; --on-accent: #0a0a0a;
+  --a1: 198 255 0; --a2: 255 107 0;
+  --fresh: #c6ff00; --recover: #ffc400; --fatigue: #ff6b00; --flame: #ff6b00;
+  --font-display: 'Barlow Condensed';
+}
+:root[data-theme='gold'] {
+  --bg: 14 14 14; --s1: 23 22 21; --s2: 32 31 29; --s3: 48 46 42; --line: 54 50 44;
+  --ink: 245 240 230; --mute: 160 152 138; --ok: 134 197 120; --warn: 230 160 80;
+  --a1c: #c9963f; --a2c: #f2d08a; --atc: #e2b86a; --on-accent: #17130c;
+  --a1: 201 150 63; --a2: 242 208 138;
+  --fresh: #86c578; --recover: #e6b450; --fatigue: #e0705a; --flame: #f2a33a;
+  --font-display: 'Bricolage Grotesque Variable';
+}
+:root[data-theme='red'] {
+  --bg: 12 12 12; --s1: 22 20 20; --s2: 31 28 28; --s3: 48 42 42; --line: 54 44 44;
+  --ink: 246 242 242; --mute: 160 148 148; --ok: 74 222 128; --warn: 251 146 60;
+  --a1c: #e11d48; --a2c: #f97316; --atc: #fb7185; --on-accent: #ffffff;
+  --a1: 225 29 72; --a2: 249 115 22;
+  --fresh: #4ade80; --recover: #fbbf24; --fatigue: #f43f5e; --flame: #f97316;
+  --font-display: 'Bricolage Grotesque Variable';
+}
 :root.light {
-  --bg: 244 244 248; --s1: 255 255 255; --s2: 237 237 243; --s3: 222 222 232; --line: 214 214 226;
-  --ink: 14 14 20; --mute: 84 84 104; --ok: 77 124 15; --warn: 194 65 12; --atc: #4d7c0f;
+  --bg: 245 246 248; --s1: 255 255 255; --s2: 238 240 244; --s3: 222 226 233; --line: 216 220 228;
+  --ink: 15 18 28; --mute: 90 98 116; --ok: 22 163 74; --warn: 217 119 6;
+  --a1c: #2563eb; --a2c: #0ea5e9; --atc: #1d4ed8; --on-accent: #ffffff;
+  --a1: 37 99 235; --a2: 14 165 233;
+  --fresh: #16a34a; --recover: #d97706; --fatigue: #dc2626; --flame: #ea580c;
+  --font-display: 'Bricolage Grotesque Variable';
   color-scheme: light;
 }
 
@@ -35,9 +65,10 @@ body {
 button { -webkit-user-select: none; user-select: none; }
 input, select, textarea { font-size: 16px; }
 .num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
-.display { @apply font-display; letter-spacing: 0.01em; font-weight: 700; }
-h1.display, h2.display, .caps { text-transform: uppercase; letter-spacing: 0.03em; }
-h1.display { font-weight: 800; line-height: 0.95; }
+.display { font-family: var(--font-display), system-ui, sans-serif; letter-spacing: -0.02em; }
+:root[data-theme='neon'] .display { letter-spacing: 0.01em; font-weight: 700; }
+:root[data-theme='neon'] h1.display, :root[data-theme='neon'] h2.display, :root[data-theme='neon'] .caps { text-transform: uppercase; letter-spacing: 0.03em; }
+:root[data-theme='neon'] h1.display { font-weight: 800; line-height: 0.95; }
 .accent-text { color: var(--atc); }
 .accent-grad { background-image: linear-gradient(135deg, var(--a1c), var(--a2c)); }
 .accent-grad-text { background-image: linear-gradient(120deg, var(--a1c), var(--a2c)); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -51,7 +82,7 @@ h1.display { font-weight: 800; line-height: 0.95; }
   content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.05; mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-.aura { position: fixed; inset: -20% -30% auto -30%; height: 60vh; pointer-events: none; z-index: 0; opacity: 0.16;
+.aura { position: fixed; inset: -20% -30% auto -30%; height: 60vh; pointer-events: none; z-index: 0; opacity: 0.2;
   background: radial-gradient(60% 60% at 30% 20%, var(--a1c), transparent 70%), radial-gradient(50% 50% at 80% 10%, var(--a2c), transparent 70%); filter: blur(40px); }
 :root.light .aura { opacity: 0.12; }
 .safe-t { padding-top: env(safe-area-inset-top); }

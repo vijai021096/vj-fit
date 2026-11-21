@@ -1,5 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import '@fontsource-variable/bricolage-grotesque/index.css'
 import '@fontsource/barlow-condensed/600.css'
 import '@fontsource/barlow-condensed/700.css'
 import '@fontsource/barlow-condensed/800.css'
@@ -32,7 +33,7 @@ class Boundary extends React.Component<{ children: React.ReactNode }, { err: Err
           <div className="display text-[22px] font-semibold">Something tripped.</div>
           <p className="text-mute text-[14px] mt-2">Your logs are safe on this device. Reload to carry on.</p>
           <p className="text-[12px] text-mute mt-2 break-words">{String(this.state.err.message)}</p>
-          <button className="mt-4 min-h-[48px] px-5 rounded-2xl accent-grad text-[#08080c] font-semibold" onClick={() => location.reload()}>Reload</button>
+          <button className="mt-4 min-h-[48px] px-5 rounded-2xl accent-grad text-[color:var(--on-accent)] font-semibold" onClick={() => location.reload()}>Reload</button>
         </div>
       </div>
     )

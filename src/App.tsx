@@ -31,6 +31,7 @@ export default function App() {
   const person = useStore((s) => s.person)
   const profiles = useStore((s) => s.profiles)
   const theme = useStore((s) => s.settings.theme)
+  const palette = useStore((s) => s.settings.palette ?? 'midnight')
   const flags = useStore((s) => s.flags)
   const tab = useStore((s) => s.tab)
   const contentRev = useStore((s) => s.contentRev)
@@ -47,11 +48,12 @@ export default function App() {
     const apply = () => {
       const light = theme === 'light' || (theme === 'system' && mq.matches)
       root.classList.toggle('light', light)
-      document.querySelector('meta[name=theme-color]')?.setAttribute('content', light ? '#F4F4F8' : '#0A0A0A')
+      root.dataset.theme = palette
+      document.querySelector('meta[name=theme-color]')?.setAttribute('content', light ? '#F5F6F8' : ({ midnight: '#0B0F1A', gold: '#0E0E0E', red: '#0C0C0C', neon: '#0A0A0A' } as Record<string, string>)[palette] ?? '#0B0F1A')
     }
     apply(); mq.addEventListener('change', apply)
     return () => mq.removeEventListener('change', apply)
-  }, [theme])
+  }, [theme, palette])
   useEffect(() => { document.documentElement.dataset.person = person ?? 'vijai'; if (person) void maybeAdjust(person) }, [person])
   useEffect(() => { if (!useStore.getState().person) setPerson('vijai') }, []) // eslint-disable-line
   // Reminder taps: "Ate it" arrives as a message; a plain tap (iPhone) arrives as a message or as ?meal= in the address.
@@ -135,7 +137,7 @@ export default function App() {
         <AnimatePresence>
           {toast && <motion.div role="status" initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 30, opacity: 0 }} className="fixed z-[90] left-1/2 -translate-x-1/2 bottom-24 px-4 py-3 rounded-2xl glass border border-line text-[14px] font-medium max-w-[88vw] text-center">{toast}</motion.div>}
           {needRefresh && <motion.div role="alert" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="fixed z-[95] left-1/2 -translate-x-1/2 top-[calc(env(safe-area-inset-top)+64px)] px-4 py-2 rounded-2xl glass border border-a1/40 text-[14px] flex items-center gap-3">
-            Update available <button type="button" className="min-h-[40px] px-3 rounded-xl accent-grad text-[#08080c] font-semibold" onClick={() => updateServiceWorker(true)}>Reload</button></motion.div>}
+            Update available <button type="button" className="min-h-[40px] px-3 rounded-xl accent-grad text-[color:var(--on-accent)] font-semibold" onClick={() => updateServiceWorker(true)}>Reload</button></motion.div>}
         </AnimatePresence>
       </div>
     </MotionConfig>

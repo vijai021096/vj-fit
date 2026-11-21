@@ -38,7 +38,7 @@ function Warm({ dayKind }: { dayKind: string }) {
       <h3 className="display font-semibold mt-5 mb-2">Then</h3>
       <div className="space-y-2">{drills.map((d, i) => (
         <button key={d} type="button" aria-pressed={!!ticked[i]} onClick={() => setTicked((t) => ({ ...t, [i]: !t[i] }))} className="w-full min-h-[52px] flex items-center gap-3 text-left px-3 rounded-2xl bg-s2 border border-line/60">
-          <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', ticked[i] ? 'accent-grad border-transparent text-[#08080c]' : 'border-line')}>{ticked[i] && <Check size={16} />}</span>
+          <span className={cx('w-7 h-7 rounded-full grid place-items-center border shrink-0', ticked[i] ? 'accent-grad border-transparent text-[color:var(--on-accent)]' : 'border-line')}>{ticked[i] && <Check size={16} />}</span>
           <RoutineImage id={ROUTINE_ID[d]} person={person} className="w-16 h-16" />
           <span className="text-[15px]">{d}</span>
         </button>))}</div>
@@ -70,7 +70,7 @@ function Cool() {
       </div>
       <ol className="mt-4 space-y-1.5">{COOLDOWN.map((s, j) => (
         <li key={s}><button type="button" onClick={() => { cd.reset(); setI(j) }} className={cx('w-full min-h-[40px] flex items-center gap-2 text-[14px] text-left', j < i ? 'text-mute line-through' : j === i ? 'font-medium' : 'text-mute')}>
-          <span className={cx('w-5 h-5 rounded-full grid place-items-center text-[11px]', j < i ? 'accent-grad text-[#08080c]' : 'bg-s3')}>{j < i ? <Check size={12} /> : j + 1}</span>{s}</button></li>))}</ol>
+          <span className={cx('w-5 h-5 rounded-full grid place-items-center text-[11px]', j < i ? 'accent-grad text-[color:var(--on-accent)]' : 'bg-s3')}>{j < i ? <Check size={12} /> : j + 1}</span>{s}</button></li>))}</ol>
     </div>
   )
 }

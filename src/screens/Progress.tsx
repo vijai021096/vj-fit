@@ -31,7 +31,7 @@ export function Progress() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="show">
       <motion.h1 variants={item} className="display text-[30px] font-semibold">Progress</motion.h1>
-      <motion.div variants={item}><button type="button" onClick={() => useStore.getState().open({ type: 'insights' })} className="w-full mt-3 card p-4 flex items-center gap-3 text-left min-h-[64px]"><span className="w-11 h-11 rounded-2xl accent-grad grid place-items-center text-[#08080c]"><LC size={20} /></span><span className="flex-1"><span className="block font-semibold text-[16px]">Insights</span><span className="block text-[13px] text-mute">Calories eaten &amp; burnt, workouts, steps — your trends</span></span></button></motion.div>
+      <motion.div variants={item}><button type="button" onClick={() => useStore.getState().open({ type: 'insights' })} className="w-full mt-3 card p-4 flex items-center gap-3 text-left min-h-[64px]"><span className="w-11 h-11 rounded-2xl accent-grad grid place-items-center text-[color:var(--on-accent)]"><LC size={20} /></span><span className="flex-1"><span className="block font-semibold text-[16px]">Insights</span><span className="block text-[13px] text-mute">Calories eaten &amp; burnt, workouts, steps — your trends</span></span></button></motion.div>
       <motion.div variants={item}><Headline person={person} weights={weights} measures={measures} /></motion.div>
       <Section title="Weight">{hidden ? <Card><p className="text-[14px] text-mute">{NAME[person]} has chosen to keep their weight private.</p></Card> : <WeightChart person={person} weights={weights} today={pos.date} />}</Section>
       <Section title="Measurements"><Measurements person={person} measures={measures} today={pos.date} /></Section>
@@ -164,9 +164,9 @@ function Photos({ person, today, weights }: { person: Person; today: string; wei
           <img src={au ?? bu} alt={`${pose} — ${after ? 'now' : 'first'}`} className="absolute inset-0 w-full h-full object-cover" />
           {after && <div className="absolute inset-0" style={{ clipPath: `inset(0 ${100 - cut}% 0 0)` }}><img src={bu} alt={`${pose} — before`} className="absolute inset-0 w-full h-full object-cover" /></div>}
           {after && <div className="absolute top-0 bottom-0 w-[3px] -ml-[1.5px] accent-grad glow pointer-events-none" style={{ left: `${cut}%` }}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full accent-grad text-[#0a0a0a] grid place-items-center shadow-lg font-bold text-[14px]">⇆</div></div>}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full accent-grad text-[color:var(--on-accent)] grid place-items-center shadow-lg font-bold text-[14px]">⇆</div></div>}
           <div className="absolute left-2 top-2 rounded-xl bg-black/65 px-2.5 py-1.5 text-white pointer-events-none"><div className="font-display caps text-[13px] font-bold tracking-wide">{after ? 'Before' : 'Day 1'}</div><div className="text-[11px] num opacity-80">{fmtDate(before.date, { day: 'numeric', month: 'short', year: '2-digit' })}{kb ? ` · ${kb} kg` : ''}</div></div>
-          {after && <div className="absolute right-2 top-2 rounded-xl bg-black/65 px-2.5 py-1.5 text-right pointer-events-none"><div className="font-display caps text-[13px] font-bold tracking-wide text-[#c6ff00]">Now</div><div className="text-[11px] num text-white/80">{fmtDate(after.date, { day: 'numeric', month: 'short', year: '2-digit' })}{ka ? ` · ${ka} kg` : ''}</div></div>}
+          {after && <div className="absolute right-2 top-2 rounded-xl bg-black/65 px-2.5 py-1.5 text-right pointer-events-none"><div className="font-display caps text-[13px] font-bold tracking-wide accent-text">Now</div><div className="text-[11px] num text-white/80">{fmtDate(after.date, { day: 'numeric', month: 'short', year: '2-digit' })}{ka ? ` · ${ka} kg` : ''}</div></div>}
           {after && <div className="absolute left-1/2 -translate-x-1/2 bottom-2 rounded-full bg-black/70 px-3 py-1.5 text-[12px] text-white num pointer-events-none whitespace-nowrap">{days} days{kb && ka ? ` · ${ka - kb > 0 ? '+' : ''}${(ka - kb).toFixed(1)} kg` : ''}</div>}
         </>}
       </div>
@@ -291,7 +291,7 @@ function Badges({ person, sessions, weights }: { person: Person; sessions: Sessi
         return (
           <button key={m.id} type="button" aria-pressed={on} onClick={() => set((s) => { if (s.badges[person][m.id]) delete s.badges[person][m.id]; else s.badges[person][m.id] = new Date().toISOString().slice(0, 10) })}
             className={cx('card p-3 text-left min-h-[92px]', on ? 'border-a1/50' : 'opacity-70')}>
-            <div className={cx('w-9 h-9 rounded-xl grid place-items-center', on ? 'accent-grad text-[#08080c]' : 'bg-s2 text-mute')}><Award size={18} /></div>
+            <div className={cx('w-9 h-9 rounded-xl grid place-items-center', on ? 'accent-grad text-[color:var(--on-accent)]' : 'bg-s2 text-mute')}><Award size={18} /></div>
             <div className="text-[13px] font-medium mt-2 leading-snug">{m.label}</div>
             <div className="text-[11px] text-mute">{on ? 'Earned' : 'Tap to mark it yourself'}</div>
           </button>)

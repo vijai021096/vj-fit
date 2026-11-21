@@ -88,9 +88,9 @@ export function Plan() {
 }
 
 const DayPill = ({ active, onClick, top, bottom, done, dim }: { active: boolean; onClick: () => void; top: string; bottom: string; done?: boolean; dim?: boolean }) => (
-  <button type="button" role="tab" aria-selected={active} onClick={onClick} className={cx('relative shrink-0 w-[64px] min-h-[64px] rounded-2xl border flex flex-col items-center justify-center', active ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s1 border-line/60', dim && !active && 'opacity-60')}>
-    <span className="text-[14px] font-semibold">{top}</span><span className={cx('text-[11px]', active ? 'text-[#08080c]/80' : 'text-mute')}>{bottom}</span>
-    {done && <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-ok text-[#08080c] grid place-items-center"><Check size={12} strokeWidth={3} /></span>}
+  <button type="button" role="tab" aria-selected={active} onClick={onClick} className={cx('relative shrink-0 w-[64px] min-h-[64px] rounded-2xl border flex flex-col items-center justify-center', active ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s1 border-line/60', dim && !active && 'opacity-60')}>
+    <span className="text-[14px] font-semibold">{top}</span><span className={cx('text-[11px]', active ? 'text-[color:var(--on-accent)]/80' : 'text-mute')}>{bottom}</span>
+    {done && <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-ok text-[color:var(--on-accent)] grid place-items-center"><Check size={12} strokeWidth={3} /></span>}
   </button>
 )
 

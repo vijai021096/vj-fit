@@ -104,7 +104,7 @@ function WorkoutEditor() {
     <>
       <p className="text-[13px] text-mute mt-1">Edits the Month 1 template. Month 2 and 3 progressions build on it. Weekly sets/reps progression (Learn → Prove) still applies automatically.</p>
       <div className="mt-3 -mx-4 px-4 flex gap-2 overflow-x-auto no-scrollbar" role="tablist" aria-label="Day">
-        {WEEKDAYS.map((d) => <button key={d} type="button" role="tab" aria-selected={wd === d} onClick={() => setWd(d)} className={cx('shrink-0 min-w-[56px] min-h-[48px] rounded-2xl border text-[14px] font-semibold', wd === d ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s1 border-line/60')}>{WD_LABEL[d]}</button>)}
+        {WEEKDAYS.map((d) => <button key={d} type="button" role="tab" aria-selected={wd === d} onClick={() => setWd(d)} className={cx('shrink-0 min-w-[56px] min-h-[48px] rounded-2xl border text-[14px] font-semibold', wd === d ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s1 border-line/60')}>{WD_LABEL[d]}</button>)}
       </div>
       <Card className="mt-3">
         <label className="text-[12px] uppercase tracking-widest text-mute font-semibold">Session title</label>
@@ -182,7 +182,7 @@ function DietEditor() {
       </Section>
       <Section title="Meals">
         <div className="-mx-4 px-4 flex gap-2 overflow-x-auto no-scrollbar" role="tablist" aria-label="Meal slot">
-          {plan.slots.map((s) => <button key={s.id} type="button" role="tab" aria-selected={slot.id === s.id} onClick={() => setSlotId(s.id)} className={cx('shrink-0 px-4 min-h-[44px] rounded-2xl border text-[14px] font-semibold', slot.id === s.id ? 'accent-grad text-[#08080c] border-transparent' : 'bg-s1 border-line/60')}>{s.label}</button>)}
+          {plan.slots.map((s) => <button key={s.id} type="button" role="tab" aria-selected={slot.id === s.id} onClick={() => setSlotId(s.id)} className={cx('shrink-0 px-4 min-h-[44px] rounded-2xl border text-[14px] font-semibold', slot.id === s.id ? 'accent-grad text-[color:var(--on-accent)] border-transparent' : 'bg-s1 border-line/60')}>{s.label}</button>)}
         </div>
         <p className="text-[12px] text-mute mt-2">Options rotate through the week. Adding or removing options reshuffles which one lands on which day. Egg meals are hidden in Veg mode.</p>
         <div className="mt-3 space-y-3">

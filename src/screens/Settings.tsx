@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowLeft, CalendarPlus, Download, HardDriveDownload, Info, Pencil, Smartphone, Trash2, Upload } from 'lucide-react'
-import { useStore, usePerson } from '../store'
+import { useStore, usePerson, PALETTES, type Palette } from '../store'
 import { NAME, dietOf, type Diet } from '../types'
 import { DISCLAIMER } from '../data/common'
 import { EXERCISES, NO_MEDIA, exName } from '../data/exercises'
@@ -103,7 +103,8 @@ export function Settings() {
           {tab === 'you' && <>
           <Section title="App">
             <Card>
-              <Row label="Theme"><Segmented id="theme" small value={s.settings.theme} onChange={(v) => s.set((x) => { x.settings.theme = v })} options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'Auto' }]} /></Row>
+              <Row label="Colours"><Segmented id="palette" small value={s.settings.palette ?? 'midnight'} onChange={(v) => s.set((x) => { x.settings.palette = v as Palette })} options={PALETTES} /></Row>
+              <Row label="Mode"><Segmented id="theme" small value={s.settings.theme} onChange={(v) => s.set((x) => { x.settings.theme = v })} options={[{ value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }, { value: 'system', label: 'Auto' }]} /></Row>
               <Row label="Sounds" sub="Rest-timer chimes. iPhones don’t vibrate for web apps."><Toggle label="Sounds" on={s.settings.sounds} onChange={(v) => s.set((x) => { x.settings.sounds = v })} /></Row>
               <Row label="Creatine reminder" sub="3–5 g/day, optional"><Toggle label="Supplements" on={s.settings.creatine} onChange={(v) => s.set((x) => { x.settings.creatine = v })} /></Row>
               <Btn kind="soft" className="w-full mt-3" onClick={() => s.open({ type: 'install' })}><Smartphone size={18} /> How to install on iPhone</Btn>

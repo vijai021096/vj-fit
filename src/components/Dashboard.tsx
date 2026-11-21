@@ -64,7 +64,7 @@ export function LevelCard({ person, profile, weights, days, sessions, settings, 
     <>
       <Card className="mt-3 !p-3.5" onClick={() => setOpen(true)} data-testid="level-card">
         <div className="flex items-center gap-3">
-          <div className="relative w-14 h-14 shrink-0 rounded-2xl accent-grad grid place-items-center text-[#0a0a0a] glow">
+          <div className="relative w-14 h-14 shrink-0 rounded-2xl accent-grad grid place-items-center text-[color:var(--on-accent)] glow">
             <span className="display text-[26px] font-extrabold num leading-none">{lv.level}</span>
           </div>
           <div className="flex-1 min-w-0">
@@ -77,7 +77,7 @@ export function LevelCard({ person, profile, weights, days, sessions, settings, 
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 mt-3">
-          <Stat icon={<Flame size={15} className="text-[#ff6b00] glow-o" />} v={`${g.streak}`} l="day streak" />
+          <Stat icon={<Flame size={15} className="text-[color:var(--flame)] glow-o" />} v={`${g.streak}`} l="day streak" />
           <Stat icon={<Trophy size={15} className="accent-text" />} v={`${g.best}`} l="best streak" />
           <Stat icon={<Zap size={15} className="accent-text" />} v={g.week.toLocaleString('en-IN')} l="XP this week" />
         </div>
@@ -87,7 +87,7 @@ export function LevelCard({ person, profile, weights, days, sessions, settings, 
         <ul className="space-y-1.5">{XP_RULES.map((r) => {
           const on = g.today[r.key]
           return <li key={r.key} className={cx('flex items-center gap-3 rounded-2xl border px-3 min-h-[48px]', on ? 'border-a1/50 bg-a1/10' : 'border-line/60 bg-s2')}>
-            <span className={cx('w-7 h-7 rounded-lg grid place-items-center', on ? 'accent-grad text-[#0a0a0a]' : 'bg-s3 text-mute')}>{on ? <Check size={16} strokeWidth={3} /> : null}</span>
+            <span className={cx('w-7 h-7 rounded-lg grid place-items-center', on ? 'accent-grad text-[color:var(--on-accent)]' : 'bg-s3 text-mute')}>{on ? <Check size={16} strokeWidth={3} /> : null}</span>
             <span className="flex-1 text-[15px]">{r.label}</span><span className={cx('text-[13px] font-semibold num', on ? 'accent-text' : 'text-mute')}>+{r.xp}</span>
           </li>
         })}</ul>
@@ -101,7 +101,7 @@ const Stat = ({ icon, v, l }: { icon: React.ReactNode; v: string; l: string }) =
 )
 
 /* ───────────── Muscle recovery ───────────── */
-const TONE: Record<Freshness, string> = { fresh: 'text-[#c6ff00]', recovering: 'text-[#ffc400]', fatigued: 'text-[#ff6b00]' }
+const TONE: Record<Freshness, string> = { fresh: 'text-[color:var(--fresh)]', recovering: 'text-[color:var(--recover)]', fatigued: 'text-[color:var(--fatigue)]' }
 export function RecoveryCard({ sessions, todayPrimary }: { sessions: SessionLog[]; todayPrimary: MuscleId[] }) {
   const rec = useMemo(() => recovery(sessions), [sessions])
   const list = Object.values(rec).filter((m) => m.fatigue >= 0.2).sort((a, b) => b.fatigue - a.fatigue)
@@ -113,7 +113,7 @@ export function RecoveryCard({ sessions, todayPrimary }: { sessions: SessionLog[
       <div className="flex items-center justify-between"><div className="text-[12px] uppercase tracking-widest text-mute font-semibold">Muscle recovery</div>
         <div className="flex gap-2 text-[11px]"><span className={TONE.fresh}>● Fresh</span><span className={TONE.recovering}>● Recovering</span><span className={TONE.fatigued}>● Fatigued</span></div></div>
       <div className="flex items-center gap-3 mt-2">
-        <BodyMap both heat={heat} heatFill="#ff6b00" height={150} info />
+        <BodyMap both heat={heat} heatFill="var(--fatigue)" height={150} info />
         <div className="flex-1 min-w-0 space-y-1.5">
           {list.length === 0 ? <p className="text-[13px] text-mute">Everything is fresh. Go hit it hard.</p> : list.slice(0, 6).map((m) => (
             <div key={m.id} className="flex items-center justify-between gap-2 text-[13px]">
